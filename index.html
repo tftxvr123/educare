@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Educare — Online Learning Platform</title>
+  <title>Educare — Online Learning Platform (Phase 1)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons CDN -->
@@ -25,13 +25,14 @@
       <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('home')">
         <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xl shadow">E</div>
         <span class="text-xl font-bold tracking-tight text-slate-900">Educare</span>
-        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">Interactive MVP</span>
+        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">Phase 1 Core</span>
       </div>
 
       <nav class="hidden md:flex items-center space-x-6 text-sm font-medium">
         <button onclick="navigate('home')" class="text-slate-600 hover:text-blue-600">Home</button>
         <button onclick="navigate('courses')" class="text-slate-600 hover:text-blue-600">Courses</button>
-        <button id="nav-dashboard-btn" onclick="navigate('dashboard')" class="text-slate-600 hover:text-blue-600 font-medium">My Dashboard</button>
+        <button id="nav-student-btn" onclick="navigate('dashboard')" class="text-slate-600 hover:text-blue-600 font-medium">My Dashboard</button>
+        <button id="nav-instructor-btn" onclick="navigate('instructor')" class="hidden text-indigo-600 hover:text-indigo-700 font-semibold">Instructor Studio</button>
         <button id="nav-admin-btn" onclick="navigate('admin')" class="hidden text-amber-600 hover:text-amber-700 font-semibold">Admin Panel</button>
       </nav>
 
@@ -49,8 +50,8 @@
   <!-- FOOTER -->
   <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-xs">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <p class="text-slate-400">Educare — Student-Login Based Learning Architecture</p>
-      <button onclick="resetDemoData()" class="text-slate-500 hover:text-rose-400 underline">Reset Local Database</button>
+      <p class="text-slate-400">Educare — Core LMS • Phase 1 Core Architecture</p>
+      <button onclick="resetDemoData()" class="text-slate-500 hover:text-rose-400 underline">Reset Demo State</button>
     </div>
   </footer>
 
@@ -63,18 +64,34 @@
       </div>
       <div class="mt-4 space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">Select User Account</label>
-          <div class="grid grid-cols-2 gap-2">
-            <button onclick="quickAuth('student')" class="p-3 border border-blue-200 bg-blue-50 text-blue-800 rounded-xl text-xs font-medium hover:bg-blue-100 text-left transition">
-              <span class="block font-bold text-sm">Jane (Student)</span>
-              student@educare.local
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">Switch User Role (1-Click)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="quickAuth('student')" class="p-2.5 border border-blue-200 bg-blue-50 text-blue-800 rounded-xl text-xs font-medium hover:bg-blue-100 text-left transition">
+              <span class="block font-bold">Student</span>
+              Jane
             </button>
-            <button onclick="quickAuth('admin')" class="p-3 border border-amber-200 bg-amber-50 text-amber-800 rounded-xl text-xs font-medium hover:bg-amber-100 text-left transition">
-              <span class="block font-bold text-sm">System Admin</span>
-              admin@educare.local
+            <button onclick="quickAuth('instructor')" class="p-2.5 border border-indigo-200 bg-indigo-50 text-indigo-800 rounded-xl text-xs font-medium hover:bg-indigo-100 text-left transition">
+              <span class="block font-bold">Instructor</span>
+              Prof. Alan
+            </button>
+            <button onclick="quickAuth('admin')" class="p-2.5 border border-amber-200 bg-amber-50 text-amber-800 rounded-xl text-xs font-medium hover:bg-amber-100 text-left transition">
+              <span class="block font-bold">Admin</span>
+              System
             </button>
           </div>
         </div>
+        <div class="relative flex py-1 items-center">
+          <div class="flex-grow border-t border-slate-200"></div>
+          <span class="flex-shrink mx-3 text-xs text-slate-400 uppercase">Or custom user</span>
+          <div class="flex-grow border-t border-slate-200"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Email</label>
+          <input type="email" id="auth-email" placeholder="user@educare.local" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+        </div>
+        <button onclick="handleCustomLogin()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition">
+          Sign In
+        </button>
       </div>
     </div>
   </div>
@@ -87,10 +104,10 @@
       </div>
       <h3 class="text-xl font-bold text-slate-900" id="pay-course-title">Course Title</h3>
       <p class="text-xs text-slate-500 mt-2">
-        Enrolling assigns this course to your student account and unlocks <span class="font-bold text-slate-800">ALL lectures and resources</span>.
+        Enrolling assigns this course to your student profile and unlocks <span class="font-bold text-slate-800">ALL lectures, notes, and quizzes</span>.
       </p>
       <div class="mt-6 space-y-2">
-        <button onclick="confirmMockPayment()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow flex items-center justify-center gap-2 transition">
+        <button onclick="confirmEnrollment()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow flex items-center justify-center gap-2 transition">
           <span>✓</span> Confirm Enrollment
         </button>
         <button onclick="togglePaymentModal(false)" class="w-full py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition">
@@ -100,11 +117,8 @@
     </div>
   </div>
 
-  <!-- JAVASCRIPT LOGIC -->
+  <!-- JAVASCRIPT ENGINE -->
   <script>
-    /* ==========================================================================
-       1. RELIABLE VIDEO CDNs
-       ========================================================================== */
     const RELIABLE_VIDEOS = {
       stream1: "https://vjs.zencdn.net/v/oceans.mp4",
       stream2: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
@@ -113,13 +127,20 @@
 
     const DEFAULT_DATA = {
       currentUser: { email: "student@educare.local", name: "Jane Student", role: "STUDENT" },
+      users: [
+        { id: "u-1", name: "Jane Student", email: "student@educare.local", role: "STUDENT", active: true },
+        { id: "u-2", name: "Prof. Alan Turing", email: "instructor@educare.local", role: "INSTRUCTOR", active: true },
+        { id: "u-3", name: "System Admin", email: "admin@educare.local", role: "ADMIN", active: true }
+      ],
       courses: [
         {
           id: "c-1",
           slug: "fullstack-mastery",
           title: "Complete Web Engineering & System Architecture",
-          shortDescription: "Master modern fullstack development from scratch.",
-          description: "Student login grants permanent access to all 5 lectures, section materials, and notes.",
+          instructorId: "instructor@educare.local",
+          instructorName: "Prof. Alan Turing",
+          shortDescription: "Master modern fullstack development and clean architecture from scratch.",
+          description: "Student login grants permanent access to all lectures, section materials, notes, and quizzes.",
           sections: [
             {
               id: "s-1",
@@ -142,12 +163,35 @@
           resources: [
             { id: "r-1", title: "Architecture_CheatSheet.pdf", size: "1.8 MB" },
             { id: "r-2", title: "Database_Diagrams.png", size: "850 KB" }
+          ],
+          quizzes: [
+            {
+              id: "q-1",
+              title: "Module 1 Mastery Assessment",
+              passingScore: 70,
+              questions: [
+                {
+                  id: "qq-1",
+                  questionText: "Which architecture pattern avoids tight coupling to cloud storage?",
+                  options: ["Monolithic hardcoding", "Service Interface Abstraction", "Direct SQL Queries in UI", "FTP hardlinks"],
+                  correctAnswerIndex: 1
+                },
+                {
+                  id: "qq-2",
+                  questionText: "How does Educare track playback resume positions without billing?",
+                  options: ["Paid third-party analytics", "Persistent Local Storage / Database sync", "Firebase Analytics", "Constant polling APIs"],
+                  correctAnswerIndex: 1
+                }
+              ]
+            }
           ]
         },
         {
           id: "c-2",
           slug: "postgresql-performance",
           title: "High-Performance PostgreSQL Fundamentals",
+          instructorId: "instructor@educare.local",
+          instructorName: "Prof. Alan Turing",
           shortDescription: "Master indexing strategies and query execution plans.",
           description: "Complete course on relational indexing and connection management. Student login grants instant access to all lectures.",
           sections: [
@@ -160,7 +204,8 @@
               ]
             }
           ],
-          resources: []
+          resources: [],
+          quizzes: []
         }
       ],
       enrollments: [
@@ -170,28 +215,28 @@
         "student@educare.local": {
           "l-1": { seconds: 12, completed: false }
         }
+      },
+      quizAttempts: {
+        "student@educare.local": {}
       }
     };
 
-    /* ==========================================================================
-       2. DATABASE STATE MANAGEMENT
-       ========================================================================== */
     function loadState() {
-      const stored = localStorage.getItem("educare_demo_v4");
+      const stored = localStorage.getItem("educare_phase1_v1");
       if (!stored) {
-        localStorage.setItem("educare_demo_v4", JSON.stringify(DEFAULT_DATA));
+        localStorage.setItem("educare_phase1_v1", JSON.stringify(DEFAULT_DATA));
         return JSON.parse(JSON.stringify(DEFAULT_DATA));
       }
       return JSON.parse(stored);
     }
 
     function saveState() {
-      localStorage.setItem("educare_demo_v4", JSON.stringify(state));
+      localStorage.setItem("educare_phase1_v1", JSON.stringify(state));
     }
 
     function resetDemoData() {
-      if (confirm("Reset local database to initial demo state?")) {
-        localStorage.removeItem("educare_demo_v4");
+      if (confirm("Reset local database to initial Phase 1 demo state?")) {
+        localStorage.removeItem("educare_phase1_v1");
         state = JSON.parse(JSON.stringify(DEFAULT_DATA));
         saveState();
         navigate('home');
@@ -205,15 +250,37 @@
     let progressTimer = null;
     let localBlobUrl = null;
 
-    /* ==========================================================================
-       3. AUTHENTICATION
-       ========================================================================== */
+    /* --- AUTH HANDLERS --- */
     function quickAuth(type) {
       if (type === 'admin') {
         state.currentUser = { email: "admin@educare.local", name: "System Admin", role: "ADMIN" };
+      } else if (type === 'instructor') {
+        state.currentUser = { email: "instructor@educare.local", name: "Prof. Alan Turing", role: "INSTRUCTOR" };
       } else {
         state.currentUser = { email: "student@educare.local", name: "Jane Student", role: "STUDENT" };
       }
+      saveState();
+      toggleAuthModal(false);
+      renderNav();
+      navigate(currentRoute, routeParams);
+    }
+
+    function handleCustomLogin() {
+      const email = document.getElementById("auth-email").value.trim().toLowerCase();
+      if (!email) return;
+      let existing = state.users.find(u => u.email === email);
+      if (!existing) {
+        let role = "STUDENT";
+        if (email.includes("admin")) role = "ADMIN";
+        else if (email.includes("instructor")) role = "INSTRUCTOR";
+        existing = { id: "u-" + Date.now(), name: email.split('@')[0], email, role, active: true };
+        state.users.push(existing);
+      }
+      if (!existing.active) {
+        alert("This user account has been deactivated by an Administrator.");
+        return;
+      }
+      state.currentUser = { email: existing.email, name: existing.name, role: existing.role };
       saveState();
       toggleAuthModal(false);
       renderNav();
@@ -235,16 +302,15 @@
 
     function renderNav() {
       const authDiv = document.getElementById("auth-buttons");
-      const dashBtn = document.getElementById("nav-dashboard-btn");
+      const studentBtn = document.getElementById("nav-student-btn");
+      const instructorBtn = document.getElementById("nav-instructor-btn");
       const adminBtn = document.getElementById("nav-admin-btn");
 
       if (state.currentUser) {
-        dashBtn.classList.remove("hidden");
-        if (state.currentUser.role === 'ADMIN') {
-          adminBtn.classList.remove("hidden");
-        } else {
-          adminBtn.classList.add("hidden");
-        }
+        studentBtn.classList.toggle("hidden", state.currentUser.role !== 'STUDENT');
+        instructorBtn.classList.toggle("hidden", state.currentUser.role !== 'INSTRUCTOR');
+        adminBtn.classList.toggle("hidden", state.currentUser.role !== 'ADMIN');
+
         authDiv.innerHTML = `
           <div class="flex items-center space-x-3">
             <span class="text-xs bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-medium">
@@ -254,7 +320,8 @@
           </div>
         `;
       } else {
-        dashBtn.classList.add("hidden");
+        studentBtn.classList.add("hidden");
+        instructorBtn.classList.add("hidden");
         adminBtn.classList.add("hidden");
         authDiv.innerHTML = `
           <button onclick="toggleAuthModal(true)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
@@ -265,9 +332,7 @@
       lucide.createIcons();
     }
 
-    /* ==========================================================================
-       4. ROUTER & VIEWS
-       ========================================================================== */
+    /* --- ROUTER --- */
     function navigate(route, params = {}) {
       if (progressTimer) {
         clearInterval(progressTimer);
@@ -282,14 +347,17 @@
       else if (route === 'courses') app.innerHTML = renderCoursesView();
       else if (route === 'course-detail') app.innerHTML = renderCourseDetailView(params.courseId);
       else if (route === 'learn') app.innerHTML = renderLearnView(params.courseId, params.lectureId);
-      else if (route === 'dashboard') app.innerHTML = renderDashboardView();
+      else if (route === 'dashboard') app.innerHTML = renderStudentDashboardView();
+      else if (route === 'instructor') app.innerHTML = renderInstructorDashboardView();
       else if (route === 'admin') app.innerHTML = renderAdminView();
 
       window.scrollTo(0, 0);
       lucide.createIcons();
     }
 
-    /* --- HOME VIEW --- */
+    /* ==========================================================================
+       VIEW: HOME (Preserving exact layout & copy)
+       ========================================================================== */
     function renderHomeView() {
       return `
         <section class="bg-slate-900 text-white py-20 px-4 text-center">
@@ -304,12 +372,16 @@
               Access comprehensive, expert-crafted courses designed for real-world mastery. Learn at your own pace with structured video lectures, downloadable guides, and uninterrupted progress tracking.
             </p>
             <div class="flex justify-center gap-4 pt-4">
-              <button onclick="navigate('dashboard')" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition shadow-lg flex items-center gap-2">
-                Open Student Dashboard →
+              <button onclick="navigate('courses')" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition shadow-lg flex items-center gap-2">
+                Browse Courses →
               </button>
-              <button onclick="navigate('courses')" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition">
-                Browse Courses
-              </button>
+              ${
+                state.currentUser?.role === 'INSTRUCTOR'
+                  ? `<button onclick="navigate('instructor')" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition">Instructor Studio</button>`
+                  : state.currentUser?.role === 'ADMIN'
+                  ? `<button onclick="navigate('admin')" class="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl transition">Admin Panel</button>`
+                  : `<button onclick="navigate('dashboard')" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition">My Dashboard</button>`
+              }
             </div>
           </div>
         </section>
@@ -323,13 +395,15 @@
       `;
     }
 
-    /* --- COURSES CATALOG --- */
+    /* ==========================================================================
+       VIEW: COURSES CATALOG
+       ========================================================================== */
     function renderCoursesView() {
       return `
         <div class="max-w-7xl mx-auto px-4 py-12">
           <div class="mb-8">
             <h1 class="text-3xl font-extrabold text-slate-900">Course Catalog</h1>
-            <p class="text-slate-500 text-sm mt-1">Enroll via student login to get lifetime access to all lectures.</p>
+            <p class="text-slate-500 text-sm mt-1">Enroll via student login to get lifetime access to all lectures and quizzes.</p>
           </div>
           <div class="grid md:grid-cols-2 gap-6">
             ${state.courses.map(courseCardHtml).join('')}
@@ -338,7 +412,6 @@
       `;
     }
 
-    /* --- AVAILABLE COURSES CARD --- */
     function courseCardHtml(c) {
       const isEnrolled = state.currentUser && state.enrollments.some(
         e => e.userId === state.currentUser.email && e.courseId === c.id
@@ -351,13 +424,19 @@
             <div class="flex justify-between items-center mb-3">
               ${
                 isEnrolled 
-                  ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">✓ Enrolled — All Lectures Unlocked</span>'
+                  ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">✓ Enrolled — All Lessons Unlocked</span>'
                   : '<span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">Student Access</span>'
               }
-              <span class="text-xs text-slate-400">${lectureCount} Total Lessons</span>
+              <span class="text-xs text-slate-400 font-medium">By ${c.instructorName || 'Educare Faculty'}</span>
             </div>
             <h3 class="font-bold text-xl text-slate-900">${c.title}</h3>
             <p class="text-slate-500 text-xs mt-2 leading-relaxed">${c.shortDescription}</p>
+            <div class="mt-4 flex items-center gap-3 text-xs text-slate-400">
+              <span>${c.sections.length} Modules</span>
+              <span>•</span>
+              <span>${lectureCount} Lessons</span>
+              ${c.quizzes?.length ? `<span>•</span><span class="text-indigo-600 font-semibold">${c.quizzes.length} Quiz</span>` : ''}
+            </div>
           </div>
 
           <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
@@ -376,7 +455,9 @@
       `;
     }
 
-    /* --- COURSE DETAIL VIEW --- */
+    /* ==========================================================================
+       VIEW: COURSE DETAIL
+       ========================================================================== */
     function renderCourseDetailView(courseId) {
       const course = state.courses.find(c => c.id === courseId);
       if (!course) return `<div class="p-8">Course not found.</div>`;
@@ -384,7 +465,6 @@
       const isEnrolled = state.currentUser && state.enrollments.some(
         e => e.userId === state.currentUser.email && e.courseId === course.id
       );
-
       const totalLectures = course.sections.reduce((acc, s) => acc + s.lectures.length, 0);
 
       return `
@@ -398,8 +478,12 @@
               }
               <h1 class="text-3xl font-extrabold text-slate-900">${course.title}</h1>
               <p class="text-slate-600 text-sm leading-relaxed">${course.description}</p>
-              <div class="text-xs text-slate-500 font-medium">
-                Includes ${course.sections.length} Modules • ${totalLectures} Video Lectures • Downloadable PDFs
+              <div class="text-xs text-slate-500 font-medium flex items-center gap-4">
+                <span>Instructor: <strong class="text-slate-700">${course.instructorName}</strong></span>
+                <span>•</span>
+                <span>${course.sections.length} Modules</span>
+                <span>•</span>
+                <span>${totalLectures} Video Lessons</span>
               </div>
             </div>
 
@@ -407,14 +491,14 @@
               <div>
                 <span class="text-[11px] font-bold uppercase text-slate-500">Course Access</span>
                 <div class="text-xl font-bold text-slate-900 mt-1">Student Enrollment</div>
-                <p class="text-[11px] text-slate-400 mt-1">Includes all ${totalLectures} lessons</p>
+                <p class="text-[11px] text-slate-400 mt-1">Includes all ${totalLectures} lessons & quizzes</p>
               </div>
               ${
                 isEnrolled
                   ? `<button onclick="startLearning('${course.id}')" class="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow transition">
                        Watch All Lessons →
                      </button>`
-                  : `<button onclick="openMockPayment('${course.id}')" class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition">
+                  : `<button onclick="openEnrollmentModal('${course.id}')" class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition">
                        Enroll &amp; Unlock All
                      </button>`
               }
@@ -428,7 +512,7 @@
               ${course.sections.map((section, sIdx) => `
                 <div class="border border-slate-200 rounded-xl overflow-hidden">
                   <div class="bg-slate-50 px-4 py-3 font-semibold text-xs text-slate-700 flex justify-between">
-                    <span>Section ${sIdx + 1}: ${section.title}</span>
+                    <span>Module ${sIdx + 1}: ${section.title}</span>
                     <span>${section.lectures.length} lessons</span>
                   </div>
                   <div class="divide-y divide-slate-100">
@@ -453,7 +537,9 @@
       `;
     }
 
-    /* --- LEARNING PLAYER VIEW --- */
+    /* ==========================================================================
+       VIEW: LEARNING PLAYER & QUIZ ENGINE
+       ========================================================================== */
     function renderLearnView(courseId, lectureId) {
       const course = state.courses.find(c => c.id === courseId);
       if (!course) return `<div class="p-8">Course not found.</div>`;
@@ -461,14 +547,14 @@
       const isEnrolled = state.currentUser && state.enrollments.some(
         e => e.userId === state.currentUser.email && e.courseId === course.id
       );
-      const isAdmin = state.currentUser && state.currentUser.role === 'ADMIN';
+      const isStaff = state.currentUser && (state.currentUser.role === 'ADMIN' || state.currentUser.role === 'INSTRUCTOR');
 
-      if (!isEnrolled && !isAdmin) {
+      if (!isEnrolled && !isStaff) {
         return `
           <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
             <i data-lucide="lock" class="w-10 h-10 text-amber-500 mx-auto"></i>
             <h2 class="text-xl font-bold">Course Enrollment Required</h2>
-            <p class="text-slate-500 text-xs">Enroll in this course to unlock all lectures.</p>
+            <p class="text-slate-500 text-xs">Enroll in this course to unlock all lectures and assessments.</p>
             <button onclick="navigate('course-detail', { courseId: '${course.id}' })" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl">
               Go to Course Enrollment Page
             </button>
@@ -515,7 +601,7 @@
 
               <!-- Local Video Test Option -->
               <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs text-slate-400">
-                <span>Want to test your own video file?</span>
+                <span>Want to test with a local video file?</span>
                 <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg font-medium border border-slate-700">
                   📁 Load Local MP4 File
                   <input type="file" accept="video/mp4,video/*" class="hidden" onchange="handleLocalVideoUpload(event)" />
@@ -536,6 +622,38 @@
                   ${nextLecture ? `<button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture.id}' })" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg">Next Lesson →</button>` : ''}
                 </div>
               </div>
+
+              <!-- Quizzes Section -->
+              ${course.quizzes && course.quizzes.length > 0 ? `
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+                  <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400"></i> Module Knowledge Check
+                    </h3>
+                  </div>
+                  <div class="space-y-3">
+                    ${course.quizzes.map(quiz => {
+                      const userAttempt = state.quizAttempts[state.currentUser?.email]?.[quiz.id];
+                      return `
+                        <div class="p-4 bg-slate-800/40 rounded-xl border border-slate-700/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                          <div>
+                            <div class="font-semibold text-sm text-white">${quiz.title}</div>
+                            <div class="text-xs text-slate-400 mt-0.5">${quiz.questions.length} Multiple Choice Questions • Passing: ${quiz.passingScore}%</div>
+                            ${userAttempt ? `
+                              <div class="mt-2 text-xs font-bold ${userAttempt.passed ? 'text-emerald-400' : 'text-amber-400'}">
+                                Previous Score: ${userAttempt.score}% (${userAttempt.passed ? 'Passed ✓' : 'Needs Retake'})
+                              </div>
+                            ` : ''}
+                          </div>
+                          <button onclick="openQuizModal('${course.id}', '${quiz.id}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">
+                            ${userAttempt ? 'Retake Quiz' : 'Attempt Quiz'}
+                          </button>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              ` : ''}
 
               <!-- Attached Resources -->
               ${course.resources.length > 0 ? `
@@ -634,7 +752,7 @@
         if (statusText) {
           statusText.innerText = (isCompleted || wasCompleted) 
             ? "Completed (100% finished)" 
-            : `${Math.round((cur / dur) * 100)}% watched (Saved)`;
+            : `${Math.round((cur / dur) * 100)}% watched (Auto-saved)`;
         }
       }
 
@@ -649,13 +767,15 @@
       };
     }
 
-    /* --- STUDENT DASHBOARD --- */
-    function renderDashboardView() {
-      if (!state.currentUser) {
+    /* ==========================================================================
+       VIEW: STUDENT DASHBOARD (ENHANCED)
+       ========================================================================== */
+    function renderStudentDashboardView() {
+      if (!state.currentUser || state.currentUser.role !== 'STUDENT') {
         return `
           <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
-            <h2 class="text-xl font-bold">Please Sign In</h2>
-            <button onclick="toggleAuthModal(true)" class="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg">Sign In</button>
+            <h2 class="text-xl font-bold">Student Access Only</h2>
+            <button onclick="quickAuth('student')" class="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg">Sign In as Jane</button>
           </div>
         `;
       }
@@ -663,13 +783,46 @@
       const userEnrollments = state.enrollments.filter(e => e.userId === state.currentUser.email);
       const enrolledCourses = state.courses.filter(c => userEnrollments.some(e => e.courseId === c.id));
       const userProgress = state.progress[state.currentUser.email] || {};
+      const userAttempts = state.quizAttempts[state.currentUser.email] || {};
+
+      let completedCoursesCount = 0;
+      let totalCompletedLectures = 0;
+
+      enrolledCourses.forEach(course => {
+        const lectures = course.sections.flatMap(s => s.lectures);
+        const completed = lectures.filter(l => userProgress[l.id]?.completed).length;
+        totalCompletedLectures += completed;
+        if (lectures.length > 0 && completed === lectures.length) {
+          completedCoursesCount++;
+        }
+      });
 
       return `
         <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
           <div>
             <span class="text-xs uppercase font-bold text-emerald-600 tracking-wider">Student Learning Portal</span>
             <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Welcome back, ${state.currentUser.name}</h1>
-            <p class="text-slate-500 text-sm mt-1">Here are your enrolled courses. Click "Watch All Lectures" to play any video.</p>
+            <p class="text-slate-500 text-sm mt-1">Track your course completions, watch lectures, and review quiz achievements.</p>
+          </div>
+
+          <!-- Quick Learning Metrics -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Enrolled Courses</span>
+              <div class="text-2xl font-black text-slate-900 mt-1">${enrolledCourses.length}</div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Lectures Completed</span>
+              <div class="text-2xl font-black text-blue-600 mt-1">${totalCompletedLectures}</div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Finished Courses</span>
+              <div class="text-2xl font-black text-emerald-600 mt-1">${completedCoursesCount}</div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Quizzes Passed</span>
+              <div class="text-2xl font-black text-indigo-600 mt-1">${Object.values(userAttempts).filter(a => a.passed).length}</div>
+            </div>
           </div>
 
           <div class="grid md:grid-cols-2 gap-6">
@@ -701,7 +854,7 @@
                   </div>
 
                   <button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture?.id}' })" class="w-full mt-6 py-3 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
-                    <i data-lucide="play" class="w-4 h-4 fill-current"></i> Watch All Lectures →
+                    <i data-lucide="play" class="w-4 h-4 fill-current"></i> Continue Learning →
                   </button>
                 </div>
               `;
@@ -711,52 +864,256 @@
       `;
     }
 
-    /* --- ADMIN VIEW --- */
-    function renderAdminView() {
-      if (!state.currentUser || state.currentUser.role !== 'ADMIN') {
-        return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied. Admin account required.</div>`;
+    /* ==========================================================================
+       VIEW: INSTRUCTOR STUDIO (NEW IN PHASE 1)
+       ========================================================================== */
+    function renderInstructorDashboardView() {
+      if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
+        return `
+          <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
+            <h2 class="text-xl font-bold">Instructor Access Only</h2>
+            <button onclick="quickAuth('instructor')" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg">Sign In as Instructor</button>
+          </div>
+        `;
       }
+
+      const myCourses = state.courses.filter(c => c.instructorId === state.currentUser.email);
+      const totalStudents = state.enrollments.filter(e => myCourses.some(c => c.id === e.courseId)).length;
 
       return `
         <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
-          <div>
-            <h1 class="text-3xl font-extrabold text-slate-900">Admin Course Management</h1>
-            <p class="text-slate-500 text-xs mt-1">Courses managed via student enrollment.</p>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <span class="text-xs uppercase font-bold text-indigo-600 tracking-wider">Instructor Studio</span>
+              <h1 class="text-3xl font-extrabold text-slate-900 mt-1">${state.currentUser.name}</h1>
+              <p class="text-slate-500 text-xs mt-1">Manage your courses, curriculum modules, and knowledge check quizzes.</p>
+            </div>
+            <button onclick="promptCreateCourse()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> Create New Course
+            </button>
           </div>
 
+          <!-- Instructor Metrics -->
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Courses Created</span>
+              <div class="text-2xl font-black text-slate-900 mt-1">${myCourses.length}</div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Total Enrolled Students</span>
+              <div class="text-2xl font-black text-indigo-600 mt-1">${totalStudents}</div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Total Lectures</span>
+              <div class="text-2xl font-black text-slate-900 mt-1">
+                ${myCourses.reduce((acc, c) => acc + c.sections.reduce((sAcc, s) => sAcc + s.lectures.length, 0), 0)}
+              </div>
+            </div>
+          </div>
+
+          <!-- Course Management Table -->
           <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
-              Active Courses
+              My Courses
             </div>
-            <table class="w-full text-left text-xs text-slate-600">
-              <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
-                <tr>
-                  <th class="px-6 py-3">Course Title</th>
-                  <th class="px-6 py-3">Total Lectures</th>
-                  <th class="px-6 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                ${state.courses.map(c => `
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
                   <tr>
-                    <td class="px-6 py-4 font-bold text-slate-900">${c.title}</td>
-                    <td class="px-6 py-4">${c.sections.reduce((a, s) => a + s.lectures.length, 0)} Lectures</td>
-                    <td class="px-6 py-4 text-right">
-                      <button onclick="startLearning('${c.id}')" class="text-blue-600 font-bold hover:underline">Preview Course Player</button>
-                    </td>
+                    <th class="px-6 py-3">Course Title</th>
+                    <th class="px-6 py-3">Modules &amp; Lessons</th>
+                    <th class="px-6 py-3">Quizzes</th>
+                    <th class="px-6 py-3 text-right">Actions</th>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${myCourses.map(c => `
+                    <tr>
+                      <td class="px-6 py-4 font-bold text-slate-900">${c.title}</td>
+                      <td class="px-6 py-4">${c.sections.length} Modules • ${c.sections.reduce((a, s) => a + s.lectures.length, 0)} Lectures</td>
+                      <td class="px-6 py-4">${c.quizzes?.length || 0} Quizzes</td>
+                      <td class="px-6 py-4 text-right space-x-3">
+                        <button onclick="promptAddSection('${c.id}')" class="text-blue-600 font-bold hover:underline">+ Module</button>
+                        <button onclick="promptAddLecture('${c.id}')" class="text-indigo-600 font-bold hover:underline">+ Lesson</button>
+                        <button onclick="promptCreateQuiz('${c.id}')" class="text-emerald-600 font-bold hover:underline">+ Quiz</button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       `;
     }
 
     /* ==========================================================================
-       5. ENROLLMENT LOGIC
+       VIEW: ADMIN PANEL (ENHANCED USER MANAGEMENT)
        ========================================================================== */
-    function openMockPayment(courseId) {
+    function renderAdminView() {
+      if (!state.currentUser || state.currentUser.role !== 'ADMIN') {
+        return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied. Admin account required.</div>`;
+      }
+
+      const totalStudents = state.users.filter(u => u.role === 'STUDENT').length;
+      const totalInstructors = state.users.filter(u => u.role === 'INSTRUCTOR').length;
+
+      return `
+        <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+          <div>
+            <h1 class="text-3xl font-extrabold text-slate-900">Admin Control Center</h1>
+            <p class="text-slate-500 text-xs mt-1">Platform management, user role assignments, and platform stats.</p>
+          </div>
+
+          <!-- Platform KPIs -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Total Students</span>
+              <div class="text-2xl font-black text-slate-900 mt-1">${totalStudents}</div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Total Instructors</span>
+              <div class="text-2xl font-black text-indigo-600 mt-1">${totalInstructors}</div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Active Courses</span>
+              <div class="text-2xl font-black text-emerald-600 mt-1">${state.courses.length}</div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <span class="text-xs font-bold text-slate-400 uppercase">Course Enrollments</span>
+              <div class="text-2xl font-black text-blue-600 mt-1">${state.enrollments.length}</div>
+            </div>
+          </div>
+
+          <!-- User Management Table -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
+              <span>Platform Users &amp; Roles</span>
+              <button onclick="promptAddUser()" class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-lg shadow">+ Add User</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+                  <tr>
+                    <th class="px-6 py-3">Name &amp; Email</th>
+                    <th class="px-6 py-3">Role</th>
+                    <th class="px-6 py-3">Status</th>
+                    <th class="px-6 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${state.users.map(u => `
+                    <tr>
+                      <td class="px-6 py-4">
+                        <strong class="text-slate-900 block">${u.name}</strong>
+                        <span class="text-slate-400 text-[11px]">${u.email}</span>
+                      </td>
+                      <td class="px-6 py-4">
+                        <select onchange="changeUserRole('${u.id}', this.value)" class="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-700">
+                          <option value="STUDENT" ${u.role === 'STUDENT' ? 'selected' : ''}>STUDENT</option>
+                          <option value="INSTRUCTOR" ${u.role === 'INSTRUCTOR' ? 'selected' : ''}>INSTRUCTOR</option>
+                          <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                        </select>
+                      </td>
+                      <td class="px-6 py-4">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                          ${u.active ? 'Active' : 'Disabled'}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="toggleUserStatus('${u.id}')" class="text-blue-600 font-bold hover:underline">
+                          ${u.active ? 'Disable' : 'Enable'}
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       QUIZ MODAL LOGIC (INTERACTIVE ASSESSMENT)
+       ========================================================================== */
+    function openQuizModal(courseId, quizId) {
+      const course = state.courses.find(c => c.id === courseId);
+      const quiz = course?.quizzes.find(q => q.id === quizId);
+      if (!quiz) return;
+
+      const modalHtml = `
+        <div id="active-quiz-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 my-8">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+              <h3 class="text-lg font-bold text-slate-900">${quiz.title}</h3>
+              <button onclick="document.getElementById('active-quiz-modal').remove()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            </div>
+            <form id="quiz-form" onsubmit="submitQuiz(event, '${courseId}', '${quizId}')" class="mt-4 space-y-6">
+              ${quiz.questions.map((q, qIdx) => `
+                <div class="space-y-2">
+                  <p class="text-sm font-semibold text-slate-800">${qIdx + 1}. ${q.questionText}</p>
+                  <div class="space-y-1.5 pl-2">
+                    ${q.options.map((opt, optIdx) => `
+                      <label class="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer p-2 rounded-lg hover:bg-slate-50 border border-slate-100">
+                        <input type="radio" name="question_${qIdx}" value="${optIdx}" required class="accent-indigo-600" />
+                        <span>${opt}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+              <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('active-quiz-modal').remove()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow">Submit Answers</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    function submitQuiz(e, courseId, quizId) {
+      e.preventDefault();
+      const course = state.courses.find(c => c.id === courseId);
+      const quiz = course?.quizzes.find(q => q.id === quizId);
+      if (!quiz || !state.currentUser) return;
+
+      const formData = new FormData(e.target);
+      let correctCount = 0;
+
+      quiz.questions.forEach((q, qIdx) => {
+        const selected = parseInt(formData.get(`question_${qIdx}`));
+        if (selected === q.correctAnswerIndex) {
+          correctCount++;
+        }
+      });
+
+      const score = Math.round((correctCount / quiz.questions.length) * 100);
+      const passed = score >= quiz.passingScore;
+
+      if (!state.quizAttempts[state.currentUser.email]) {
+        state.quizAttempts[state.currentUser.email] = {};
+      }
+
+      state.quizAttempts[state.currentUser.email][quiz.id] = {
+        score,
+        passed,
+        attemptedAt: new Date().toISOString()
+      };
+      saveState();
+
+      document.getElementById('active-quiz-modal').remove();
+      alert(`Quiz Finished! Your Score: ${score}%\nResult: ${passed ? 'PASSED ✓' : 'FAILED — Needs review'}`);
+      navigate('learn', { courseId, lectureId: course.sections[0]?.lectures[0]?.id });
+    }
+
+    /* ==========================================================================
+       COURSE MANAGEMENT & DATA MUTATIONS
+       ========================================================================== */
+    function openEnrollmentModal(courseId) {
       if (!state.currentUser) {
         toggleAuthModal(true);
         return;
@@ -775,7 +1132,7 @@
       modal.classList.toggle("flex", show);
     }
 
-    function confirmMockPayment() {
+    function confirmEnrollment() {
       if (!pendingCheckoutCourse || !state.currentUser) return;
 
       const alreadyEnrolled = state.enrollments.some(
@@ -803,9 +1160,128 @@
       }
     }
 
-    /* ==========================================================================
-       6. BOOTSTRAP (Starts on Home View)
-       ========================================================================== */
+    function promptCreateCourse() {
+      const title = prompt("Enter course title:");
+      if (!title) return;
+      const desc = prompt("Enter short description:") || "Comprehensive course curriculum.";
+
+      state.courses.unshift({
+        id: "c-" + Date.now(),
+        slug: title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        title: title,
+        instructorId: state.currentUser.email,
+        instructorName: state.currentUser.name,
+        shortDescription: desc,
+        description: desc,
+        sections: [
+          {
+            id: "s-" + Date.now(),
+            title: "Module 1: Orientation",
+            lectures: [
+              { id: "l-" + Date.now(), title: "1. Welcome Lesson", duration: 46, videoUrl: RELIABLE_VIDEOS.stream1 }
+            ]
+          }
+        ],
+        resources: [],
+        quizzes: []
+      });
+
+      saveState();
+      navigate(currentRoute);
+    }
+
+    function promptAddSection(courseId) {
+      const course = state.courses.find(c => c.id === courseId);
+      if (!course) return;
+      const title = prompt("Enter Module / Section Title:");
+      if (!title) return;
+
+      course.sections.push({
+        id: "s-" + Date.now(),
+        title: title,
+        lectures: []
+      });
+      saveState();
+      navigate(currentRoute);
+    }
+
+    function promptAddLecture(courseId) {
+      const course = state.courses.find(c => c.id === courseId);
+      if (!course || course.sections.length === 0) return;
+      const title = prompt("Enter lesson title:");
+      if (!title) return;
+      const videoUrl = prompt("Enter video URL (or leave blank for standard demo):") || RELIABLE_VIDEOS.stream1;
+
+      course.sections[0].lectures.push({
+        id: "l-" + Date.now(),
+        title: title,
+        duration: 46,
+        videoUrl: videoUrl
+      });
+      saveState();
+      navigate(currentRoute);
+    }
+
+    function promptCreateQuiz(courseId) {
+      const course = state.courses.find(c => c.id === courseId);
+      if (!course) return;
+      const title = prompt("Enter Assessment Title:", "Module Knowledge Quiz");
+      if (!title) return;
+
+      if (!course.quizzes) course.quizzes = [];
+      course.quizzes.push({
+        id: "q-" + Date.now(),
+        title: title,
+        passingScore: 70,
+        questions: [
+          {
+            id: "qq-" + Date.now(),
+            questionText: "Sample question: Does this lecture require online billing?",
+            options: ["Yes, paid billing", "No, it is 100% free Phase 1 LMS", "Requires monthly credit card", "Unsure"],
+            correctAnswerIndex: 1
+          }
+        ]
+      });
+      saveState();
+      navigate(currentRoute);
+    }
+
+    function promptAddUser() {
+      const name = prompt("User full name:");
+      if (!name) return;
+      const email = prompt("User email address:");
+      if (!email) return;
+      const role = prompt("Role (STUDENT, INSTRUCTOR, ADMIN):", "STUDENT").toUpperCase();
+
+      state.users.push({
+        id: "u-" + Date.now(),
+        name,
+        email: email.toLowerCase(),
+        role: ["STUDENT", "INSTRUCTOR", "ADMIN"].includes(role) ? role : "STUDENT",
+        active: true
+      });
+      saveState();
+      navigate('admin');
+    }
+
+    function changeUserRole(userId, newRole) {
+      const user = state.users.find(u => u.id === userId);
+      if (user) {
+        user.role = newRole;
+        saveState();
+        renderNav();
+      }
+    }
+
+    function toggleUserStatus(userId) {
+      const user = state.users.find(u => u.id === userId);
+      if (user) {
+        user.active = !user.active;
+        saveState();
+        navigate('admin');
+      }
+    }
+
     window.onload = () => {
       navigate('home');
     };
