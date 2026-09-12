@@ -194,12 +194,12 @@
         localStorage.removeItem("educare_demo_v4");
         state = JSON.parse(JSON.stringify(DEFAULT_DATA));
         saveState();
-        navigate('dashboard');
+        navigate('home');
       }
     }
 
     let state = loadState();
-    let currentRoute = 'dashboard';
+    let currentRoute = 'home';
     let routeParams = {};
     let pendingCheckoutCourse = null;
     let progressTimer = null;
@@ -289,7 +289,7 @@
       lucide.createIcons();
     }
 
-    /* --- HOME VIEW (TARGETED TEXT MODIFIED) --- */
+    /* --- HOME VIEW --- */
     function renderHomeView() {
       return `
         <section class="bg-slate-900 text-white py-20 px-4 text-center">
@@ -804,10 +804,10 @@
     }
 
     /* ==========================================================================
-       6. BOOTSTRAP
+       6. BOOTSTRAP (Starts on Home View)
        ========================================================================== */
     window.onload = () => {
-      navigate('dashboard');
+      navigate('home');
     };
   </script>
 </body>
