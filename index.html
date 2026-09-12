@@ -289,7 +289,7 @@
       lucide.createIcons();
     }
 
-    /* --- HOME VIEW --- */
+    /* --- HOME VIEW (TARGETED TEXT MODIFIED) --- */
     function renderHomeView() {
       return `
         <section class="bg-slate-900 text-white py-20 px-4 text-center">
@@ -298,10 +298,10 @@
               Student-Login Based Access
             </span>
             <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight">
-              Learn Without Friction. <br><span class="text-blue-400">One Enrollment Unlocks Everything.</span>
+              Transform Your Future. <br><span class="text-blue-400">Empower Your Ambition with Educare.</span>
             </h1>
             <p class="text-slate-400 text-base md:text-lg max-w-2xl mx-auto">
-              When a student logs in and enrolls in a course, every single lecture, resource, and video is unlocked automatically.
+              Access comprehensive, expert-crafted courses designed for real-world mastery. Learn at your own pace with structured video lectures, downloadable guides, and uninterrupted progress tracking.
             </p>
             <div class="flex justify-center gap-4 pt-4">
               <button onclick="navigate('dashboard')" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition shadow-lg flex items-center gap-2">
@@ -338,7 +338,7 @@
       `;
     }
 
-    /* --- AVAILABLE COURSES CARD (NO PRICES) --- */
+    /* --- AVAILABLE COURSES CARD --- */
     function courseCardHtml(c) {
       const isEnrolled = state.currentUser && state.enrollments.some(
         e => e.userId === state.currentUser.email && e.courseId === c.id
@@ -376,7 +376,7 @@
       `;
     }
 
-    /* --- COURSE DETAIL VIEW (NO PRICES) --- */
+    /* --- COURSE DETAIL VIEW --- */
     function renderCourseDetailView(courseId) {
       const course = state.courses.find(c => c.id === courseId);
       if (!course) return `<div class="p-8">Course not found.</div>`;
