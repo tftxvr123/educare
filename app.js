@@ -1589,6 +1589,4 @@ function submitQuiz(e, courseId, quizId) {
 window.onload = () => {
   navigate('home');
 };
-```
 
----
