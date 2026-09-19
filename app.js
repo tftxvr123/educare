@@ -1,12 +1,11 @@
 
 
 
-// app.js — Educare Production Core LMS Controller (Hybrid YouTube + MP4 Player)
+// app.js — Educare Production Core LMS Controller (Hybrid Player + Transparent Click-Shield)
 
 // =============================================================
 // AUTHENTICATION & GATEWAY CONFIGURATION
 // =============================================================
-
 // Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
 const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
 
@@ -142,7 +141,7 @@ const FALLBACK_POLICIES = {
       { label: "Engineering Disciplines", value: "4 Core Programs" },
       { label: "Accreditation", value: "ISO 9001:2015" },
       { label: "Course Validity", value: "365 Days (1 Year)" },
-      { label: "Video Hosting", value: "YouTube Unlisted + MP4" }
+      { label: "Video Protection", value: "Click-Shield Enforced" }
     ]
   },
   contact: {
@@ -205,7 +204,7 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v11");
+    const stored = localStorage.getItem("educare_prod_v12");
     let parsedState = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_STATE));
 
     if (!parsedState.courses || parsedState.courses.length === 0) {
@@ -241,7 +240,7 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v11", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v12", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
@@ -249,7 +248,7 @@ function saveState() {
 
 function resetDemoState() {
   if (confirm("Reset local storage to production defaults?")) {
-    localStorage.removeItem("educare_prod_v11");
+    localStorage.removeItem("educare_prod_v12");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -766,7 +765,7 @@ function renderCourseDetailView(courseId) {
 }
 
 // -------------------------------------------------------------
-// HYBRID VIDEO PLAYER (YOUTUBE EMBED + MP4 NATIVE)
+// HYBRID VIDEO PLAYER WITH TRANSPARENT CLICK-SHIELD OVERLAY
 // -------------------------------------------------------------
 function renderLearnView(courseId, lectureId) {
   const course = state.courses.find(c => c.id === courseId);
@@ -815,19 +814,33 @@ function renderLearnView(courseId, lectureId) {
       <div class="flex-1 p-4 lg:p-8 overflow-y-auto">
         <div class="max-w-4xl mx-auto space-y-6">
           
-          <!-- HYBRID PLAYER SCREEN (YouTube or Native MP4) -->
+          <!-- HYBRID PLAYER SCREEN WITH TRANSPARENT CLICK-SHIELD -->
           <div class="relative bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl aspect-video select-none">
             ${
               ytEmbedUrl
-                ? `<iframe
+                ? `
+                   <!-- YouTube Embed Player -->
+                   <iframe
                      id="live-player-yt"
                      src="${ytEmbedUrl}"
                      title="${activeLecture.title}"
                      class="w-full h-full border-0"
                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                      allowfullscreen
-                   ></iframe>`
-                : `<video
+                   ></iframe>
+
+                   <!-- TRANSPARENT CLICK-SHIELD OVERLAYS (0% Quality Loss — Blocks Opening YouTube) -->
+                   <!-- 1. Top Channel & Title Shield -->
+                   <div class="absolute top-0 left-0 right-0 h-16 z-20 bg-transparent cursor-default pointer-events-auto" title="Educare Protected Stream" onclick="event.stopPropagation()"></div>
+                   
+                   <!-- 2. Bottom-Left Share & Watch Later Shield -->
+                   <div class="absolute bottom-0 left-0 w-28 h-12 z-20 bg-transparent cursor-default pointer-events-auto" onclick="event.stopPropagation()"></div>
+
+                   <!-- 3. Bottom-Right 'Watch on YouTube' Shield -->
+                   <div class="absolute bottom-0 right-0 w-44 h-12 z-20 bg-transparent cursor-default pointer-events-auto" onclick="event.stopPropagation()"></div>
+                  `
+                : `
+                   <video
                      id="live-player"
                      src="${activeLecture.videoUrl}"
                      controls
@@ -838,7 +851,8 @@ function renderLearnView(courseId, lectureId) {
                    ></video>
                    <div id="resume-toast" class="absolute top-4 left-4 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow hidden">
                      Resumed at <span id="resume-time-str">00:00</span>
-                   </div>`
+                   </div>
+                  `
             }
           </div>
 
@@ -851,7 +865,7 @@ function renderLearnView(courseId, lectureId) {
               <h1 class="text-2xl font-bold text-white mt-1">${activeLecture.title}</h1>
               <div class="flex items-center gap-3 mt-1.5">
                 <span class="text-xs text-slate-400" id="progress-status">
-                  ${isCurrentLectureDone ? '✓ Lesson Completed' : (ytEmbedUrl ? 'YouTube Stream' : 'Tracking progress automatically...')}
+                  ${isCurrentLectureDone ? '✓ Lesson Completed' : (ytEmbedUrl ? 'Protected YouTube Stream' : 'Tracking progress automatically...')}
                 </span>
                 ${
                   state.currentUser && state.currentUser.role === 'STUDENT'
@@ -964,7 +978,7 @@ function renderStudentDashboardView() {
 }
 
 // -------------------------------------------------------------
-// INSTRUCTOR STUDIO (educaresir99@gmail.com PORTAL)
+// INSTRUCTOR STUDIO
 // -------------------------------------------------------------
 function renderInstructorDashboardView() {
   if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
@@ -1019,7 +1033,7 @@ function renderInstructorDashboardView() {
 }
 
 // -------------------------------------------------------------
-// ADMIN & SUPER ADMIN OPERATIONS (WITH DEDICATED STUDENT ROSTER)
+// ADMIN & SUPER ADMIN OPERATIONS
 // -------------------------------------------------------------
 function renderAdminView() {
   if (!state.currentUser || !['ADMIN', 'SUPER_ADMIN'].includes(state.currentUser.role)) {
@@ -1068,7 +1082,7 @@ function renderAdminView() {
         </div>
       </div>
 
-      <!-- 1. DEDICATED STUDENT DIRECTORY (FULL NAME & EMAIL) -->
+      <!-- 1. DEDICATED STUDENT DIRECTORY -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
           <div class="flex items-center gap-2">
@@ -1188,7 +1202,7 @@ function promptAddLecture(courseId) {
 
   course.sections[0].lectures.push({ id: "l-" + Date.now(), title, duration, videoUrl });
   saveState();
-  alert(`Video Lecture "${title}" successfully uploaded and added to ${course.title}!`);
+  alert(`Video Lecture "${title}" successfully added to ${course.title}!`);
   navigate(currentRoute);
 }
 
@@ -1213,17 +1227,6 @@ function promptScheduleLiveClass() {
   saveState();
   alert("Live session scheduled and broadcasted!");
   navigate(currentRoute);
-}
-
-function changeUserRole(userId, newRole) {
-  const user = state.users.find(u => u.id === userId);
-  if (user) {
-    user.role = newRole;
-    saveState();
-    alert(`Role updated: ${user.name} is now ${newRole}.`);
-    renderNav();
-    navigate('admin');
-  }
 }
 
 function toggleUserStatus(userId) {
