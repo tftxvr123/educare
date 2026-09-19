@@ -392,7 +392,7 @@ function initOfficialGoogleButton() {
 function quickAuth(roleType) {
   const roleConfig = ROLE_PASSWORDS[roleType];
   if (roleConfig) {
-    const entered = prompt(`Enter password for ${roleConfig.name}:\n(Password: ${roleConfig.pass})`);
+    const entered = prompt(`Enter password for ${roleConfig.name}:`);
     if (entered === null) return; // User cancelled prompt
     if (entered.trim() !== roleConfig.pass) {
       alert("Incorrect password. Access denied.");
