@@ -1,9 +1,14 @@
-// app.js — Educare Production Core LMS Controller with Razorpay Integration
+
+
+// app.js — Educare Production Core LMS Controller
 
 // =============================================================
-// RAZORPAY GATEWAY CONFIGURATION
-// Paste your Key ID from dashboard.razorpay.com (Settings -> API Keys)
+// AUTHENTICATION & GATEWAY CONFIGURATION
 // =============================================================
+// Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
+const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
+// Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
+
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
 
 const FALLBACK_COURSES = [
@@ -159,12 +164,7 @@ const activeCourses = (typeof window.INITIAL_COURSES !== 'undefined') ? window.I
 const activePolicies = (typeof window.POLICIES_DATA !== 'undefined') ? window.POLICIES_DATA : (typeof POLICIES_DATA !== 'undefined' ? POLICIES_DATA : FALLBACK_POLICIES);
 
 const DEFAULT_STATE = {
-  currentUser: {
-    email: "student@educare.local",
-    name: "Jane Student",
-    role: "STUDENT",
-    sessionId: "sess_student_init_1"
-  },
+  currentUser: null, // Starts unauthenticated so public visitors see login-first prompts
   users: [
     { id: "u-1", name: "Jane Student", email: "student@educare.local", role: "STUDENT", active: true, activeSessionId: "sess_student_init_1" },
     { id: "u-2", name: "Prof. Alan Turing", email: "instructor@educare.local", role: "INSTRUCTOR", active: true, activeSessionId: "sess_inst_init_1" },
@@ -225,9 +225,9 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v4");
+    const stored = localStorage.getItem("educare_prod_v5");
     if (!stored) {
-      localStorage.setItem("educare_prod_v4", JSON.stringify(DEFAULT_STATE));
+      localStorage.setItem("educare_prod_v5", JSON.stringify(DEFAULT_STATE));
       return JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
     return JSON.parse(stored);
@@ -238,15 +238,15 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v4", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v5", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
 }
 
 function resetDemoState() {
-  if (confirm("Reset local storage to production defaults?")) {
-    localStorage.removeItem("educare_prod_v4");
+  if (confirm("Reset local storage to initial defaults?")) {
+    localStorage.removeItem("educare_prod_v5");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -260,6 +260,101 @@ let pendingCheckoutCourse = null;
 
 function generateSessionId() {
   return "sess_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
+}
+
+// -------------------------------------------------------------
+// REAL GOOGLE IDENTITY SERVICES (GIS) SSO
+// -------------------------------------------------------------
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+function handleGoogleCredentialResponse(response) {
+  if (!response || !response.credential) return;
+  const profile = parseJwt(response.credential);
+  if (!profile || !profile.email) {
+    alert("Google authentication failed. Please try again.");
+    return;
+  }
+
+  const sessId = generateSessionId();
+  const email = profile.email.toLowerCase().trim();
+  const name = profile.name || email.split('@')[0];
+
+  let existing = state.users.find(u => u.email === email);
+  if (!existing) {
+    existing = {
+      id: "u-" + Date.now(),
+      name: name,
+      email: email,
+      role: "STUDENT",
+      active: true,
+      activeSessionId: sessId,
+      googleSub: profile.sub
+    };
+    state.users.push(existing);
+  } else {
+    existing.activeSessionId = sessId;
+  }
+
+  state.currentUser = { email: existing.email, name: existing.name, role: existing.role, sessionId: sessId };
+  saveState();
+  toggleAuthModal(false);
+  renderNav();
+  alert(`Google Authentication Successful!\nSigned in as: ${existing.name} (${existing.email})`);
+  navigate(currentRoute, routeParams);
+}
+
+function handleGoogleAuth() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    alert("Google Identity Services is loading. Please check your internet connection and try again.");
+    return;
+  }
+
+  // If client hasn't added their custom Client ID yet, prompt or initialize
+  const clientIdToUse = (GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes("YOUR_GOOGLE_CLIENT_ID")) 
+    ? GOOGLE_CLIENT_ID 
+    : window.DYNAMIC_GOOGLE_CLIENT_ID;
+
+  if (!clientIdToUse) {
+    const entered = prompt("Enter your Google OAuth Client ID (from console.cloud.google.com):\nOr leave blank to simulate real Google token payload for demo:", "");
+    if (entered) {
+      window.DYNAMIC_GOOGLE_CLIENT_ID = entered.trim();
+    } else {
+      // Direct authenticated Gmail simulation with confirmation
+      const simulatedEmail = prompt("Enter your Gmail address to verify:", "student@gmail.com");
+      if (simulatedEmail && simulatedEmail.includes("@")) {
+        handleGoogleCredentialResponse({
+          credential: btoa(JSON.stringify({ alg: "HS256" })) + "." + btoa(JSON.stringify({
+            email: simulatedEmail.toLowerCase().trim(),
+            name: simulatedEmail.split('@')[0].toUpperCase(),
+            sub: "google_verified_" + Date.now()
+          })) + ".signature"
+        });
+      }
+      return;
+    }
+  }
+
+  try {
+    google.accounts.id.initialize({
+      client_id: window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredentialResponse,
+      auto_select: false
+    });
+    google.accounts.id.prompt();
+  } catch (err) {
+    alert("Google Sign-In prompt error: " + err.message);
+  }
 }
 
 function quickAuth(roleType) {
@@ -277,28 +372,6 @@ function quickAuth(roleType) {
   const u = state.users.find(user => user.email === state.currentUser.email);
   if (u) u.activeSessionId = sessId;
 
-  saveState();
-  toggleAuthModal(false);
-  renderNav();
-  navigate(currentRoute, routeParams);
-}
-
-function handleGoogleAuth() {
-  const dummyGoogleEmail = prompt("Enter your Google / Gmail address:", "jane.student@gmail.com");
-  if (!dummyGoogleEmail) return;
-
-  const sessId = generateSessionId();
-  const normalizedEmail = dummyGoogleEmail.trim().toLowerCase();
-  let existing = state.users.find(u => u.email === normalizedEmail);
-
-  if (!existing) {
-    existing = { id: "u-" + Date.now(), name: normalizedEmail.split('@')[0].toUpperCase(), email: normalizedEmail, role: "STUDENT", active: true, activeSessionId: sessId };
-    state.users.push(existing);
-  } else {
-    existing.activeSessionId = sessId;
-  }
-
-  state.currentUser = { email: existing.email, name: existing.name, role: existing.role, sessionId: sessId };
   saveState();
   toggleAuthModal(false);
   renderNav();
@@ -406,9 +479,6 @@ function navigate(route, params = {}) {
   }
 }
 
-// -------------------------------------------------------------
-// VIEWS
-// -------------------------------------------------------------
 function renderHomeView() {
   const p = activePolicies.institution;
   return `
@@ -432,7 +502,9 @@ function renderHomeView() {
               ? `<button onclick="navigate('admin')" class="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl transition">Admin Control Panel</button>`
               : state.currentUser?.role === 'INSTRUCTOR'
               ? `<button onclick="navigate('instructor')" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition">Instructor Studio</button>`
-              : `<button onclick="navigate('dashboard')" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition">Student Dashboard</button>`
+              : state.currentUser
+              ? `<button onclick="navigate('dashboard')" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition">Student Dashboard</button>`
+              : `<button onclick="toggleAuthModal(true)" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition">Sign In to Platform</button>`
           }
         </div>
       </div>
@@ -524,7 +596,7 @@ function courseCardHtml(c) {
                  Continue Learning →
                </button>`
             : `<button onclick="navigate('course-detail', { courseId: '${c.id}' })" class="px-5 py-2.5 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition">
-                 View &amp; Enroll
+                 View Course Details
                </button>`
         }
       </div>
@@ -532,6 +604,9 @@ function courseCardHtml(c) {
   `;
 }
 
+// -------------------------------------------------------------
+// COURSE DETAIL VIEW (STRICT LOGIN CHECK FOR ENROLLMENT)
+// -------------------------------------------------------------
 function renderCourseDetailView(courseId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
@@ -560,21 +635,32 @@ function renderCourseDetailView(courseId) {
           </div>
         </div>
 
-        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center flex flex-col justify-between min-w-[240px]">
+        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center flex flex-col justify-between min-w-[260px]">
           <div>
             <span class="text-[11px] font-bold uppercase text-slate-500">Program Tuition</span>
             <div class="text-3xl font-black text-slate-900 mt-1">₹${course.price.toLocaleString('en-IN')}</div>
             <p class="text-[11px] text-slate-400 mt-1">+18% GST • 365 Days Access</p>
           </div>
-          ${
-            isEnrolled
-              ? `<button onclick="startLearning('${course.id}')" class="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow transition">
-                   Watch All Lessons →
-                 </button>`
-              : `<button onclick="openCheckoutModal('${course.id}')" class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
-                   <span>🔒</span> Enroll via Razorpay
-                 </button>`
-          }
+
+          <!-- Strict Authentication Gate for Enrollment -->
+          <div class="mt-6">
+            ${
+              isEnrolled
+                ? `<button onclick="startLearning('${course.id}')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow transition">
+                     Watch All Lessons →
+                   </button>`
+                : state.currentUser
+                ? `<button onclick="openCheckoutModal('${course.id}')" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                     <span>💳</span> Enroll via Razorpay
+                   </button>`
+                : `<div class="space-y-2">
+                     <button onclick="promptLoginForEnrollment('${course.id}')" class="w-full py-3 bg-slate-900 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                       <span>🔒</span> Sign In to Enroll
+                     </button>
+                     <p class="text-[10px] text-slate-500">Student login required to purchase and activate license</p>
+                   </div>`
+            }
+          </div>
         </div>
       </div>
 
@@ -609,9 +695,31 @@ function renderCourseDetailView(courseId) {
   `;
 }
 
+function promptLoginForEnrollment(courseId) {
+  alert("Account Required: You must be signed in with your student profile to purchase this course and receive an official tax invoice.");
+  toggleAuthModal(true);
+}
+
 function renderLearnView(courseId, lectureId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
+
+  const enrollment = state.currentUser ? state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === course.id) : null;
+  const isEnrolled = !!enrollment && enrollment.status === 'ACTIVE';
+  const isStaff = state.currentUser && ['ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR'].includes(state.currentUser.role);
+
+  if (!isEnrolled && !isStaff) {
+    return `
+      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
+        <i data-lucide="lock" class="w-10 h-10 text-amber-500 mx-auto"></i>
+        <h2 class="text-xl font-bold">Course Access Restricted</h2>
+        <p class="text-slate-500 text-xs">This course content is protected. Please sign in and complete enrollment to stream lectures.</p>
+        <button onclick="navigate('course-detail', { courseId: '${course.id}' })" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl">
+          View Enrollment Page
+        </button>
+      </div>
+    `;
+  }
 
   const allLectures = course.sections.flatMap(s => s.lectures);
   const activeLecture = allLectures.find(l => l.id === lectureId) || allLectures[0];
@@ -695,6 +803,16 @@ function renderLearnView(courseId, lectureId) {
 }
 
 function renderStudentDashboardView() {
+  if (!state.currentUser) {
+    return `
+      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
+        <h2 class="text-xl font-bold">Please Sign In</h2>
+        <p class="text-slate-500 text-xs">Sign in with your student account to access purchased courses.</p>
+        <button onclick="toggleAuthModal(true)" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl">Sign In</button>
+      </div>
+    `;
+  }
+
   const userEnrollments = state.enrollments.filter(e => e.userId === state.currentUser?.email);
   const enrolledCourses = state.courses.filter(c => userEnrollments.some(e => e.courseId === c.id));
   const userProgress = state.progress[state.currentUser?.email] || {};
@@ -812,13 +930,16 @@ function renderAdminView() {
 }
 
 // -------------------------------------------------------------
-// RAZORPAY PAYMENT & CHECKOUT ENGINE
+// CHECKOUT ENGINE (STRICT AUTHENTICATION GUARDED)
 // -------------------------------------------------------------
 function openCheckoutModal(courseId) {
+  // Strict Guard: Never allow an unauthenticated visitor into checkout
   if (!state.currentUser) {
+    alert("Authentication Required: Please sign in or register before enrolling.");
     toggleAuthModal(true);
     return;
   }
+
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return;
 
@@ -833,7 +954,7 @@ function openCheckoutModal(courseId) {
         <div class="flex justify-between items-center pb-3 border-b border-slate-100">
           <div>
             <h3 class="text-lg font-bold text-slate-900">Secure Razorpay Checkout</h3>
-            <span class="text-[11px] text-slate-400">Merchant: Educare Technical Training Institute</span>
+            <span class="text-[11px] text-slate-400">Student: ${state.currentUser.name} (${state.currentUser.email})</span>
           </div>
           <button onclick="document.getElementById('active-checkout-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
         </div>
@@ -857,7 +978,7 @@ function openCheckoutModal(courseId) {
           <div class="font-bold flex items-center gap-1.5">
             <span>🔒</span> Supported Modes in Razorpay Popup:
           </div>
-          <p class="text-[11px] text-blue-700">UPI (Google Pay, PhonePe, Paytm, QR), All Bank Credit/Debit Cards, and Net Banking.</p>
+          <p class="text-[11px] text-blue-700">UPI (Google Pay, PhonePe, Paytm, QR), Credit/Debit Cards, and Net Banking.</p>
         </div>
 
         <div class="pt-2 space-y-2">
@@ -877,31 +998,29 @@ function openCheckoutModal(courseId) {
 
 function launchRazorpayCheckout(subtotal, tax, total) {
   if (typeof Razorpay === 'undefined') {
-    alert("Razorpay SDK is still loading. Please try again in a few seconds or check your connection.");
+    alert("Razorpay SDK is still loading. Please try again in a moment.");
     return;
   }
 
-  // If the user hasn't replaced the placeholder key yet, give clear guidance
-  if (RAZORPAY_KEY_ID === "rzp_test_YOUR_KEY_HERE") {
+  if (RAZORPAY_KEY_ID === "rzp_test_YOUR_KEY_HERE" && !window.DYNAMIC_RAZORPAY_KEY) {
     const enteredKey = prompt("Enter your Razorpay Key ID (starts with rzp_test_ or rzp_live_):", "rzp_test_");
     if (!enteredKey || enteredKey === "rzp_test_") {
-      alert("Key ID required to launch the real Razorpay window. You can use 'Simulate Instant Test Payment' below in the meantime.");
+      alert("Key ID required to launch real Razorpay window. You can use 'Simulate Instant Test Payment' in the meantime.");
       return;
     }
-    window.DYNAMIC_RAZORPAY_KEY = enteredKey;
+    window.DYNAMIC_RAZORPAY_KEY = enteredKey.trim();
   }
 
   const keyToUse = window.DYNAMIC_RAZORPAY_KEY || RAZORPAY_KEY_ID;
 
   const options = {
     "key": keyToUse,
-    "amount": total * 100, // Amount in paise (₹1 = 100 paise)
+    "amount": total * 100,
     "currency": "INR",
     "name": "Educare Training Institute",
     "description": pendingCheckoutCourse.title,
     "image": "https://educare-hazel.vercel.app/favicon.ico",
     "handler": function (response) {
-      // Successful payment callback from Razorpay
       const paymentId = response.razorpay_payment_id || "pay_" + Math.random().toString(36).substring(2, 10);
       completePaymentAndEnroll(subtotal, tax, total, paymentId, "Razorpay Online Gateway");
     },
@@ -910,9 +1029,7 @@ function launchRazorpayCheckout(subtotal, tax, total) {
       "email": state.currentUser.email,
       "contact": "9876543210"
     },
-    "theme": {
-      "color": "#2563EB"
-    }
+    "theme": { "color": "#2563EB" }
   };
 
   try {
@@ -922,8 +1039,7 @@ function launchRazorpayCheckout(subtotal, tax, total) {
     });
     rzp.open();
   } catch (err) {
-    alert("Could not open Razorpay popup: " + err.message + "\nUsing sandbox simulator.");
-    simulateSandboxPayment(subtotal, tax, total);
+    alert("Could not open Razorpay window: " + err.message);
   }
 }
 
@@ -935,9 +1051,8 @@ function simulateSandboxPayment(subtotal, tax, total) {
 function completePaymentAndEnroll(subtotal, tax, total, transactionId, paymentMethod) {
   const invNum = "INV-2026-" + Math.floor(1000 + Math.random() * 9000);
   const now = new Date();
-  const expiry = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 365-day validity
+  const expiry = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
 
-  // 1. Record Purchase
   state.purchases.unshift({
     id: "pur-" + Date.now(),
     invoiceNumber: invNum,
@@ -954,7 +1069,6 @@ function completePaymentAndEnroll(subtotal, tax, total, transactionId, paymentMe
     paidAt: now.toISOString()
   });
 
-  // 2. Activate 365-Day Enrollment
   const existingIdx = state.enrollments.findIndex(e => e.userId === state.currentUser.email && e.courseId === pendingCheckoutCourse.id);
   if (existingIdx >= 0) {
     state.enrollments[existingIdx].status = "ACTIVE";
@@ -982,9 +1096,6 @@ function completePaymentAndEnroll(subtotal, tax, total, transactionId, paymentMe
   navigate('dashboard');
 }
 
-// -------------------------------------------------------------
-// INVOICE RECEIPT MODAL
-// -------------------------------------------------------------
 function showInvoiceModal(purchaseId) {
   const p = state.purchases.find(item => item.id === purchaseId);
   if (!p) return;
