@@ -4,20 +4,11 @@
 // =============================================================
 // AUTHENTICATION & GATEWAY CONFIGURATION
 // =============================================================
-
 // Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
 const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
 
 // Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
-
-// Passwords for 1-Click Role Switch
-const ROLE_PASSWORDS = {
-  student: { name: "Jane (Student)", pass: "Student@123" },
-  instructor: { name: "Prof. Alan (Instructor)", pass: "Instructor@123" },
-  admin: { name: "Course Ops (Admin)", pass: "Admin@123" },
-  superadmin: { name: "Director (Super Admin)", pass: "Super@123" }
-};
 
 const FALLBACK_COURSES = [
   {
@@ -171,13 +162,14 @@ const FALLBACK_POLICIES = {
 const activeCourses = (typeof window.INITIAL_COURSES !== 'undefined') ? window.INITIAL_COURSES : (typeof INITIAL_COURSES !== 'undefined' ? INITIAL_COURSES : FALLBACK_COURSES);
 const activePolicies = (typeof window.POLICIES_DATA !== 'undefined') ? window.POLICIES_DATA : (typeof POLICIES_DATA !== 'undefined' ? POLICIES_DATA : FALLBACK_POLICIES);
 
+// Default User Directory with Edwin as Super Admin
 const DEFAULT_STATE = {
   currentUser: null,
   users: [
-    { id: "u-1", name: "Jane Student", email: "student@educare.local", role: "STUDENT", active: true, activeSessionId: "sess_student_init_1" },
-    { id: "u-2", name: "Prof. Alan Turing", email: "instructor@educare.local", role: "INSTRUCTOR", active: true, activeSessionId: "sess_inst_init_1" },
-    { id: "u-3", name: "Course Admin", email: "admin@educare.local", role: "ADMIN", active: true, activeSessionId: "sess_admin_init_1" },
-    { id: "u-4", name: "Director Super Admin", email: "superadmin@educare.local", role: "SUPER_ADMIN", active: true, activeSessionId: "sess_super_init_1" }
+    { id: "u-super-edwin", name: "Edwin (Director)", email: "tftxvr@gmail.com", role: "SUPER_ADMIN", active: true, activeSessionId: "sess_super_1", password: "Admin@123" },
+    { id: "u-admin", name: "Course Operations Admin", email: "admin@gmail.com", role: "ADMIN", active: true, activeSessionId: "sess_admin_1", password: "Admin@123" },
+    { id: "u-inst", name: "Prof. Alan Turing", email: "instructor@gmail.com", role: "INSTRUCTOR", active: true, activeSessionId: "sess_inst_1", password: "Instructor@123" },
+    { id: "u-student", name: "Jane Student", email: "student@gmail.com", role: "STUDENT", active: true, activeSessionId: "sess_student_1", password: "Student@123" }
   ],
   courses: activeCourses,
   liveClasses: [
@@ -195,7 +187,7 @@ const DEFAULT_STATE = {
   enrollments: [
     {
       id: "enr-mech-1",
-      userId: "student@educare.local",
+      userId: "student@gmail.com",
       courseId: "c-mechanical",
       enrolledAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
@@ -207,7 +199,7 @@ const DEFAULT_STATE = {
     {
       id: "pur-1",
       invoiceNumber: "INV-2026-1001",
-      userId: "student@educare.local",
+      userId: "student@gmail.com",
       studentName: "Jane Student",
       courseId: "c-mechanical",
       courseTitle: "Mechanical: Industrial HVAC & Thermal Design",
@@ -221,7 +213,7 @@ const DEFAULT_STATE = {
     }
   ],
   progress: {
-    "student@educare.local": { "l-m-1": { seconds: 46, completed: true } }
+    "student@gmail.com": { "l-m-1": { seconds: 46, completed: true } }
   },
   quizAttempts: {},
   auditLogs: [{ id: "log-1", event: "SYSTEM_ONLINE", actor: "System", timestamp: new Date().toISOString(), details: "Platform initialized" }]
@@ -229,12 +221,31 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v6");
+    const stored = localStorage.getItem("educare_prod_v7");
+    let parsedState;
     if (!stored) {
-      localStorage.setItem("educare_prod_v6", JSON.stringify(DEFAULT_STATE));
-      return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      parsedState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    } else {
+      parsedState = JSON.parse(stored);
     }
-    return JSON.parse(stored);
+    
+    // Ensure tftxvr@gmail.com is guaranteed SUPER_ADMIN
+    let superRecord = parsedState.users.find(u => u.email === "tftxvr@gmail.com");
+    if (!superRecord) {
+      parsedState.users.unshift({
+        id: "u-super-edwin",
+        name: "Edwin (Director)",
+        email: "tftxvr@gmail.com",
+        role: "SUPER_ADMIN",
+        active: true,
+        activeSessionId: "sess_super_1",
+        password: "Admin@123"
+      });
+    } else {
+      superRecord.role = "SUPER_ADMIN";
+      if (!superRecord.password) superRecord.password = "Admin@123";
+    }
+    return parsedState;
   } catch {
     return JSON.parse(JSON.stringify(DEFAULT_STATE));
   }
@@ -242,7 +253,7 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v6", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v7", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
@@ -250,7 +261,7 @@ function saveState() {
 
 function resetDemoState() {
   if (confirm("Reset local storage to initial defaults?")) {
-    localStorage.removeItem("educare_prod_v6");
+    localStorage.removeItem("educare_prod_v7");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -261,22 +272,39 @@ let state = loadState();
 let currentRoute = 'home';
 let routeParams = {};
 let pendingCheckoutCourse = null;
+let isSignUpMode = false;
 
 function generateSessionId() {
   return "sess_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
 }
 
+// Redirects user to their role-specific workspace after login
+function redirectAfterLogin(role) {
+  if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+    navigate('admin');
+  } else if (role === 'INSTRUCTOR') {
+    navigate('instructor');
+  } else {
+    navigate('dashboard');
+  }
+}
+
+// -------------------------------------------------------------
+// CREDENTIAL & GOOGLE AUTHENTICATION
+// -------------------------------------------------------------
 function loginWithGoogleProfile(email, name, sub) {
   const sessId = generateSessionId();
   const normalizedEmail = email.toLowerCase().trim();
   let existing = state.users.find(u => u.email === normalizedEmail);
+
+  const targetRole = (normalizedEmail === "tftxvr@gmail.com") ? "SUPER_ADMIN" : (existing ? existing.role : "STUDENT");
 
   if (!existing) {
     existing = {
       id: "u-" + Date.now(),
       name: name,
       email: normalizedEmail,
-      role: "STUDENT",
+      role: targetRole,
       active: true,
       activeSessionId: sessId,
       googleSub: sub
@@ -284,14 +312,15 @@ function loginWithGoogleProfile(email, name, sub) {
     state.users.push(existing);
   } else {
     existing.activeSessionId = sessId;
+    if (normalizedEmail === "tftxvr@gmail.com") existing.role = "SUPER_ADMIN";
   }
 
   state.currentUser = { email: existing.email, name: existing.name, role: existing.role, sessionId: sessId };
   saveState();
   toggleAuthModal(false);
   renderNav();
-  alert(`Google Authentication Successful!\nSigned in as: ${existing.name} (${existing.email})`);
-  navigate(currentRoute, routeParams);
+  alert(`Signed in as: ${existing.name} (${existing.role})`);
+  redirectAfterLogin(existing.role);
 }
 
 function parseJwt(token) {
@@ -314,17 +343,6 @@ function handleGoogleCredentialResponse(response) {
 }
 
 function handleGoogleAuth() {
-  const keyToUse = (window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID);
-
-  if (!keyToUse || keyToUse.includes("YOUR_GOOGLE_CLIENT_ID")) {
-    const entered = prompt("Paste your Google OAuth Web Client ID (from console.cloud.google.com):\nEnds with .apps.googleusercontent.com", "");
-    if (!entered || !entered.includes(".apps.googleusercontent.com")) {
-      alert("Valid Google Client ID required.\nFormat: 123456789-xxxxxx.apps.googleusercontent.com\n\nIn the meantime, you can use the 1-Click Role Switcher or email box below to test without setup.");
-      return;
-    }
-    window.DYNAMIC_GOOGLE_CLIENT_ID = entered.trim();
-  }
-
   const clientId = window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID;
 
   if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
@@ -348,22 +366,21 @@ function handleGoogleAuth() {
           }
         },
         error_callback: (err) => {
-          alert("Google Sign-In Error: " + (err.message || err.type || "Check Authorized JavaScript Origins in Google Cloud Console"));
+          alert("Google Sign-In Error: " + (err.message || err.type || "Check Authorized Origins"));
         }
       });
       tokenClient.requestAccessToken({ prompt: 'consent' });
     } catch (err) {
-      alert("Google popup launch error: " + err.message);
+      alert("Google popup error: " + err.message);
     }
   } else {
-    alert("Google Identity Services is loading. Please try again in 2 seconds.");
+    alert("Google Identity Services is loading. Please wait a moment.");
   }
 }
 
 function initOfficialGoogleButton() {
   const btnContainer = document.getElementById("google-signin-btn");
   if (!btnContainer) return;
-
   const clientId = window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID;
   if (!clientId || clientId.includes("YOUR_GOOGLE_CLIENT_ID")) return;
 
@@ -386,55 +403,89 @@ function initOfficialGoogleButton() {
   }
 }
 
-// =============================================================
-// PASSWORD-PROTECTED 1-CLICK ROLE SWITCH
-// =============================================================
-function quickAuth(roleType) {
-  const roleConfig = ROLE_PASSWORDS[roleType];
-  if (roleConfig) {
-    const entered = prompt(`Enter password for ${roleConfig.name}:`);
-    if (entered === null) return; // User cancelled prompt
-    if (entered.trim() !== roleConfig.pass) {
-      alert("Incorrect password. Access denied.");
-      return;
-    }
-  }
+// -------------------------------------------------------------
+// STANDARD EMAIL & PASSWORD FORM HANDLER
+// -------------------------------------------------------------
+function toggleAuthMode() {
+  isSignUpMode = !isSignUpMode;
+  const title = document.getElementById("auth-modal-title");
+  const nameField = document.getElementById("auth-name-field");
+  const submitBtn = document.getElementById("auth-submit-btn");
+  const toggleBtn = document.getElementById("auth-toggle-mode-btn");
 
-  const sessId = generateSessionId();
-  if (roleType === 'superadmin') {
-    state.currentUser = { email: "superadmin@educare.local", name: "Director Super Admin", role: "SUPER_ADMIN", sessionId: sessId };
-  } else if (roleType === 'admin') {
-    state.currentUser = { email: "admin@educare.local", name: "Course Admin", role: "ADMIN", sessionId: sessId };
-  } else if (roleType === 'instructor') {
-    state.currentUser = { email: "instructor@educare.local", name: "Prof. Alan Turing", role: "INSTRUCTOR", sessionId: sessId };
+  if (isSignUpMode) {
+    if (title) title.innerText = "Create Student Account";
+    if (nameField) nameField.classList.remove("hidden");
+    if (submitBtn) submitBtn.innerText = "Register & Sign In";
+    if (toggleBtn) toggleBtn.innerHTML = "Already have an account? <span class='font-bold text-blue-600'>Sign In</span>";
   } else {
-    state.currentUser = { email: "student@educare.local", name: "Jane Student", role: "STUDENT", sessionId: sessId };
+    if (title) title.innerText = "Sign In to Educare";
+    if (nameField) nameField.classList.add("hidden");
+    if (submitBtn) submitBtn.innerText = "Sign In";
+    if (toggleBtn) toggleBtn.innerHTML = "New student? <span class='font-bold text-blue-600'>Create an account</span>";
   }
-
-  const u = state.users.find(user => user.email === state.currentUser.email);
-  if (u) u.activeSessionId = sessId;
-
-  saveState();
-  toggleAuthModal(false);
-  renderNav();
-  navigate(currentRoute, routeParams);
 }
 
-function handleCustomLogin() {
+function togglePasswordVisibility() {
+  const pwdInput = document.getElementById("auth-password");
+  if (!pwdInput) return;
+  pwdInput.type = pwdInput.type === "password" ? "text" : "password";
+}
+
+function handleAuthSubmit(e) {
+  e.preventDefault();
   const emailInput = document.getElementById("auth-email").value.trim().toLowerCase();
-  if (!emailInput) return;
+  const passwordInput = document.getElementById("auth-password").value;
+  const nameInput = document.getElementById("auth-name") ? document.getElementById("auth-name").value.trim() : "";
+
+  if (!emailInput || !passwordInput) {
+    alert("Please enter both email and password.");
+    return;
+  }
 
   const sessId = generateSessionId();
   let existing = state.users.find(u => u.email === emailInput);
 
-  if (!existing) {
-    let assignedRole = "STUDENT";
-    if (emailInput.includes("superadmin")) assignedRole = "SUPER_ADMIN";
-    else if (emailInput.includes("admin")) assignedRole = "ADMIN";
-    else if (emailInput.includes("instructor")) assignedRole = "INSTRUCTOR";
+  if (isSignUpMode) {
+    if (existing) {
+      alert("An account with this email already exists. Please sign in.");
+      toggleAuthMode();
+      return;
+    }
+    const roleAssigned = (emailInput === "tftxvr@gmail.com") ? "SUPER_ADMIN" : "STUDENT";
+    const newUser = {
+      id: "u-" + Date.now(),
+      name: nameInput || emailInput.split('@')[0],
+      email: emailInput,
+      role: roleAssigned,
+      password: passwordInput,
+      active: true,
+      activeSessionId: sessId
+    };
+    state.users.push(newUser);
+    state.currentUser = { email: newUser.email, name: newUser.name, role: newUser.role, sessionId: sessId };
+    saveState();
+    toggleAuthModal(false);
+    renderNav();
+    alert("Registration successful! Welcome to Educare.");
+    redirectAfterLogin(newUser.role);
+    return;
+  }
 
-    existing = { id: "u-" + Date.now(), name: emailInput.split('@')[0], email: emailInput, role: assignedRole, active: true, activeSessionId: sessId };
-    state.users.push(existing);
+  // Sign In Mode
+  if (!existing) {
+    alert("Account not found. Click 'Create an account' below to register.");
+    return;
+  }
+
+  if (!existing.active) {
+    alert("Account Locked: This account has been deactivated by an Administrator.");
+    return;
+  }
+
+  if (existing.password && existing.password !== passwordInput) {
+    alert("Incorrect password. Please verify and try again.");
+    return;
   }
 
   existing.activeSessionId = sessId;
@@ -442,7 +493,7 @@ function handleCustomLogin() {
   saveState();
   toggleAuthModal(false);
   renderNav();
-  navigate(currentRoute, routeParams);
+  redirectAfterLogin(existing.role);
 }
 
 function logout() {
@@ -475,10 +526,11 @@ function renderNav() {
     if (adminBtn) adminBtn.classList.toggle("hidden", state.currentUser.role !== 'ADMIN' && state.currentUser.role !== 'SUPER_ADMIN');
 
     if (authDiv) {
+      const roleLabel = state.currentUser.role === 'SUPER_ADMIN' ? 'SUPER ADMIN' : state.currentUser.role;
       authDiv.innerHTML = `
         <div class="flex items-center space-x-3">
           <span class="text-xs bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-medium">
-            ${state.currentUser.name} <span class="font-bold text-blue-600">(${state.currentUser.role})</span>
+            ${state.currentUser.name} <span class="font-bold text-blue-600">(${roleLabel})</span>
           </span>
           <button onclick="logout()" class="text-xs font-semibold text-rose-600 hover:text-rose-700">Logout</button>
         </div>
@@ -927,16 +979,274 @@ function renderStudentDashboardView() {
   `;
 }
 
+// -------------------------------------------------------------
+// INSTRUCTOR STUDIO (CAN UPLOAD VIDEOS TO ASSIGNED COURSES)
+// -------------------------------------------------------------
 function renderInstructorDashboardView() {
-  return `<div class="max-w-7xl mx-auto px-4 py-12 space-y-8"><h1 class="text-3xl font-extrabold text-slate-900">Instructor Studio</h1></div>`;
-}
+  if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
+    return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied: Instructor portal only.</div>`;
+  }
 
-function renderAdminView() {
-  return `<div class="max-w-7xl mx-auto px-4 py-12 space-y-8"><h1 class="text-3xl font-extrabold text-slate-900">Admin Control Center</h1></div>`;
+  const myCourses = state.courses.filter(c => c.instructorId === state.currentUser.email);
+
+  return `
+    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="text-xs uppercase font-bold text-indigo-600 tracking-wider">Faculty Portal</span>
+          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">${state.currentUser.name}</h1>
+          <p class="text-slate-500 text-xs mt-1">Upload lecture videos, structure modules, and review assessments for your courses.</p>
+        </div>
+        <button onclick="promptScheduleLiveClass()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition">
+          + Schedule Live Session
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
+          My Engineering Programs
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">Course Name</th>
+                <th class="px-6 py-3">Curriculum Breakdown</th>
+                <th class="px-6 py-3 text-right">Upload &amp; Manage</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${myCourses.map(c => `
+                <tr>
+                  <td class="px-6 py-4 font-bold text-slate-900">${c.title}</td>
+                  <td class="px-6 py-4">${c.sections.length} Modules • ${c.sections.reduce((a, s) => a + s.lectures.length, 0)} Lessons</td>
+                  <td class="px-6 py-4 text-right space-x-3">
+                    <button onclick="promptAddSection('${c.id}')" class="text-blue-600 font-bold hover:underline">+ Module</button>
+                    <button onclick="promptAddLecture('${c.id}')" class="text-emerald-600 font-bold hover:underline">📹 + Video Lecture</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // -------------------------------------------------------------
-// CHECKOUT ENGINE (WITH RAZORPAY)
+// ADMIN & SUPER ADMIN OPERATIONS (UNIVERSAL UPLOAD ACROSS ALL COURSES)
+// -------------------------------------------------------------
+function renderAdminView() {
+  if (!state.currentUser || !['ADMIN', 'SUPER_ADMIN'].includes(state.currentUser.role)) {
+    return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied: Administrative access required.</div>`;
+  }
+
+  const isSuper = state.currentUser.role === 'SUPER_ADMIN';
+  const totalStudents = state.users.filter(u => u.role === 'STUDENT').length;
+  const grossRevenue = state.purchases.reduce((acc, p) => acc + (p.paymentStatus === 'PAID' ? p.total : 0), 0);
+
+  return `
+    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="text-xs uppercase font-bold ${isSuper ? 'text-rose-600' : 'text-amber-600'} tracking-wider">
+            ${isSuper ? 'Super Admin Console (Director)' : 'Operations Admin Hub'}
+          </span>
+          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Management &amp; Course Operations</h1>
+          <p class="text-slate-500 text-xs mt-1">Upload lectures across all courses, manage student access, and oversee live sessions.</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="promptScheduleLiveClass()" class="px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg shadow">+ Schedule Live Class</button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-2 ${isSuper ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4">
+        ${isSuper ? `
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-bold text-slate-400 uppercase">Gross Revenue</span>
+            <div class="text-2xl font-black text-emerald-600 mt-1">₹${grossRevenue.toLocaleString('en-IN')}</div>
+            <span class="text-[10px] text-slate-400">Razorpay Verified</span>
+          </div>
+        ` : ''}
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Registered Students</span>
+          <div class="text-2xl font-black text-slate-900 mt-1">${totalStudents}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Active Enrollments</span>
+          <div class="text-2xl font-black text-blue-600 mt-1">${state.enrollments.filter(e => e.status === 'ACTIVE').length}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Total Courses</span>
+          <div class="text-2xl font-black text-slate-900 mt-1">${state.courses.length}</div>
+        </div>
+      </div>
+
+      <!-- Universal Course Management (Admin & Super Admin can upload lectures to ALL courses) -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
+          <span>All Courses — Upload Lectures &amp; Manage Modules</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">Program Title</th>
+                <th class="px-6 py-3">Assigned Faculty</th>
+                <th class="px-6 py-3">Curriculum Structure</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${state.courses.map(c => `
+                <tr>
+                  <td class="px-6 py-4 font-bold text-slate-900">${c.title}</td>
+                  <td class="px-6 py-4">${c.instructorName}</td>
+                  <td class="px-6 py-4">${c.sections.length} Modules • ${c.sections.reduce((a, s) => a + s.lectures.length, 0)} Lessons</td>
+                  <td class="px-6 py-4 text-right space-x-3">
+                    <button onclick="promptAddSection('${c.id}')" class="text-blue-600 font-bold hover:underline">+ Module</button>
+                    <button onclick="promptAddLecture('${c.id}')" class="text-emerald-600 font-bold hover:underline">📹 + Video Lecture</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- User Role Management Table (Super Admin can change roles) -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
+          <span>User Directory &amp; Role Permissions</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">User</th>
+                <th class="px-6 py-3">Assigned Role</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${state.users.map(u => `
+                <tr>
+                  <td class="px-6 py-4">
+                    <strong class="text-slate-900 block">${u.name}</strong>
+                    <span class="text-slate-400 text-[11px]">${u.email}</span>
+                  </td>
+                  <td class="px-6 py-4">
+                    ${isSuper && u.email !== state.currentUser.email ? `
+                      <select onchange="changeUserRole('${u.id}', this.value)" class="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-700">
+                        <option value="STUDENT" ${u.role === 'STUDENT' ? 'selected' : ''}>STUDENT</option>
+                        <option value="INSTRUCTOR" ${u.role === 'INSTRUCTOR' ? 'selected' : ''}>INSTRUCTOR</option>
+                        <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                        <option value="SUPER_ADMIN" ${u.role === 'SUPER_ADMIN' ? 'selected' : ''}>SUPER_ADMIN</option>
+                      </select>
+                    ` : `
+                      <span class="font-bold text-blue-600 uppercase text-[11px]">${u.role}</span>
+                    `}
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                      ${u.active ? 'Active' : 'Locked'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-right space-x-2">
+                    ${u.email !== state.currentUser.email ? `
+                      <button onclick="toggleUserStatus('${u.id}')" class="text-blue-600 font-bold hover:underline">${u.active ? 'Lock' : 'Unlock'}</button>
+                    ` : '<span class="text-slate-400 text-[10px]">Current Session</span>'}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// -------------------------------------------------------------
+// COURSE CONTENT UPLOAD & MUTATIONS
+// -------------------------------------------------------------
+function promptAddSection(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course) return;
+  const title = prompt("Enter Module Title (e.g., Module 3: Advanced Hydronics):");
+  if (!title) return;
+  course.sections.push({ id: "s-" + Date.now(), title, lectures: [] });
+  saveState();
+  alert(`Module "${title}" added to ${course.title}.`);
+  navigate(currentRoute);
+}
+
+function promptAddLecture(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course || course.sections.length === 0) {
+    alert("Please add at least one module first before adding lectures.");
+    return;
+  }
+  const title = prompt("Enter Lecture / Video Title:");
+  if (!title) return;
+  const videoUrl = prompt("Enter MP4 Video URL (or leave blank for standard video):") || "https://vjs.zencdn.net/v/oceans.mp4";
+  const duration = parseInt(prompt("Enter duration in seconds (e.g., 60):", "46")) || 46;
+
+  // Append to first section or chosen section
+  course.sections[0].lectures.push({ id: "l-" + Date.now(), title, duration, videoUrl });
+  saveState();
+  alert(`Lecture "${title}" uploaded to ${course.title}!`);
+  navigate(currentRoute);
+}
+
+function promptScheduleLiveClass() {
+  const title = prompt("Enter Live Session Title:");
+  if (!title) return;
+  const platform = prompt("Platform (Zoom, Google Meet, or YouTube Live):", "Zoom") || "Zoom";
+  const joinUrl = prompt("Enter Meeting Link:", "https://zoom.us") || "https://zoom.us";
+  const courseId = state.courses[0]?.id || "c-mechanical";
+
+  state.liveClasses.unshift({
+    id: "live-" + Date.now(),
+    courseId,
+    title,
+    platform,
+    joinUrl,
+    scheduledDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+    instructorName: state.currentUser.name,
+    isCompleted: false
+  });
+
+  saveState();
+  alert("Live interactive session scheduled successfully!");
+  navigate(currentRoute);
+}
+
+function changeUserRole(userId, newRole) {
+  const user = state.users.find(u => u.id === userId);
+  if (user) {
+    user.role = newRole;
+    saveState();
+    alert(`Role updated: ${user.name} is now ${newRole}.`);
+    renderNav();
+    navigate('admin');
+  }
+}
+
+function toggleUserStatus(userId) {
+  const user = state.users.find(u => u.id === userId);
+  if (user) {
+    user.active = !user.active;
+    saveState();
+    navigate('admin');
+  }
+}
+
+// -------------------------------------------------------------
+// CHECKOUT & PAYMENT ENGINE
 // -------------------------------------------------------------
 function openCheckoutModal(courseId) {
   if (!state.currentUser) {
@@ -996,7 +1306,7 @@ function openCheckoutModal(courseId) {
 
 function launchRazorpayCheckout(subtotal, tax, total) {
   if (typeof Razorpay === 'undefined') {
-    alert("Razorpay SDK is still loading. Please try again in a moment.");
+    alert("Razorpay SDK is loading. Please try again in a moment.");
     return;
   }
 
