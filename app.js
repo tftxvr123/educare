@@ -6,7 +6,7 @@
 // AUTHENTICATION & GATEWAY CONFIGURATION
 // =============================================================
 // Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
 // Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
 
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
