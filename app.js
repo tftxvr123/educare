@@ -1,250 +1,68 @@
 
 // app.js — Educare Production Core LMS Controller
 
-// =============================================================
-// AUTHENTICATION & GATEWAY CONFIGURATION
-// =============================================================
 // Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
 const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
 
 // Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
 
-const FALLBACK_COURSES = [
-  {
-    id: "c-mechanical",
-    slug: "mechanical-engineering",
-    title: "Mechanical: Industrial HVAC & Thermal Design",
-    discipline: "HVAC, Thermodynamics & MEP",
-    price: 6499,
-    validityDays: 365,
-    instructorId: "instructor@educare.local",
-    instructorName: "Er. Rajesh Sharma (Senior MEP Consultant)",
-    shortDescription: "Complete industrial HVAC design, ventilation principles, duct sizing, and equipment selection.",
-    description: "An industry-accredited training program covering thermodynamics fundamentals, psychrometric analysis, building heat load calculations using E20/ASHRAE standards, equal-friction duct sizing, chilled water pump head calculations, and AHU air-side design.",
-    sections: [
-      {
-        id: "s-mech-1",
-        title: "Module 1: HVAC Fundamentals & Psychrometric Analysis",
-        lectures: [
-          { id: "l-m-1", title: "1. Psychrometric Chart Dynamics & Thermal Comfort", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
-          { id: "l-m-2", title: "2. Building Envelope Heat Gain & E-20 Sheets", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" },
-          { id: "l-m-3", title: "3. Air Handling Units (AHU) & Chilled Water Loops", duration: 10, videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4" }
-        ]
-      },
-      {
-        id: "s-mech-2",
-        title: "Module 2: Duct Design, Air Distribution & Pump Sizing",
-        lectures: [
-          { id: "l-m-4", title: "4. Equal Friction Duct Sizing & Diffuser Layouts", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
-          { id: "l-m-5", title: "5. Hydraulic Pump Head Calculation & Pipe Sizing", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
-        ]
-      }
-    ],
-    resources: [{ id: "r-m-1", title: "ASHRAE_HVAC_Design_Manual.pdf", size: "3.2 MB" }],
-    quizzes: []
-  },
-  {
-    id: "c-electrical",
-    slug: "electrical-engineering",
-    title: "Electrical: Industrial Power Distribution & SLD",
-    discipline: "Power Distribution & Control Panels",
-    price: 5999,
-    validityDays: 365,
-    instructorId: "instructor@educare.local",
-    instructorName: "Er. Priya Nair (Chief Electrical Specialist)",
-    shortDescription: "Industrial wiring, Single-Line Diagrams (SLD), panel board design, and transformer sizing.",
-    description: "Master modern power engineering: connected load vs. maximum demand calculations, busbar trunking systems, voltage drop analysis, circuit breakers, and earthing design.",
-    sections: [
-      {
-        id: "s-elec-1",
-        title: "Module 1: Load Calculations & Single-Line Diagrams",
-        lectures: [
-          { id: "l-e-1", title: "1. Power System Topology & Substation Layouts", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
-          { id: "l-e-2", title: "2. Maximum Demand & Diversity Factor Estimation", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
-        ]
-      }
-    ],
-    resources: [{ id: "r-e-1", title: "IEC_Standard_Cable_Capacity_Guide.pdf", size: "2.8 MB" }],
-    quizzes: []
-  },
-  {
-    id: "c-plumbing",
-    slug: "plumbing-engineering",
-    title: "Plumbing: Public Health Engineering (PHE) & Fire",
-    discipline: "Water Treatment, Drainage & Firefighting",
-    price: 4999,
-    validityDays: 365,
-    instructorId: "instructor@educare.local",
-    instructorName: "Er. K. V. Raman (PHE Lead Consultant)",
-    shortDescription: "Water supply networks, drainage systems, hydro-pneumatic pumping, and firefighting hydraulics.",
-    description: "Covers water storage tank sizing, booster pumping systems, gravity water distribution, fixture units, soil and waste stack venting, and stormwater drainage.",
-    sections: [
-      {
-        id: "s-plumb-1",
-        title: "Module 1: Water Distribution & Storage Systems",
-        lectures: [
-          { id: "l-p-1", title: "1. Daily Water Demand Calculation & Sump Sizing", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
-          { id: "l-p-2", title: "2. Hydro-Pneumatic Pressure Booster Systems", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
-        ]
-      }
-    ],
-    resources: [{ id: "r-p-1", title: "UPC_Plumbing_Fixture_Unit_Chart.pdf", size: "2.1 MB" }],
-    quizzes: []
-  },
-  {
-    id: "c-autocad-revit",
-    slug: "autocad-revit-bim",
-    title: "AutoCAD & Revit: 2D Drafting to 3D BIM Modeling",
-    discipline: "BIM Architecture & MEP Drafting",
-    price: 7999,
-    validityDays: 365,
-    instructorId: "instructor@educare.local",
-    instructorName: "Ar. Sneha Patel (Autodesk Certified Professional)",
-    shortDescription: "Master 2D engineering drafting in AutoCAD and multidisciplinary 3D BIM modeling in Autodesk Revit.",
-    description: "Practical training from 2D floor plans to coordinated 3D BIM models: layer conventions, dynamic blocks, external references (XRefs), Revit parameter management, and family creation.",
-    sections: [
-      {
-        id: "s-bim-1",
-        title: "Module 1: AutoCAD 2D Engineering Drafting",
-        lectures: [
-          { id: "l-b-1", title: "1. Precision Coordinate Systems, Layers & Annotation Styles", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
-          { id: "l-b-2", title: "2. Dynamic Attributes, Block Libraries & Viewports", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
-        ]
-      }
-    ],
-    resources: [{ id: "r-b-1", title: "AutoCAD_Engineering_Standard_Shortcuts.pdf", size: "2.4 MB" }],
-    quizzes: []
-  }
-];
 
-const FALLBACK_POLICIES = {
-  institution: {
-    name: "Educare Technical Training Institute",
-    tagline: "Premier Vocational & Industrial Engineering Academy",
-    about: "Educare is an accredited technical training academy delivering hands-on engineering programs in Mechanical HVAC, Electrical Systems, Plumbing (PHE), and AutoCAD/Revit BIM Modeling. Developed by practicing senior consultants to build job-ready competencies.",
-    regNumber: "EDU-IND-2026-8842",
-    stats: [
-      { label: "Engineering Disciplines", value: "4 Core Programs" },
-      { label: "Accreditation", value: "ISO 9001:2015" },
-      { label: "Course Validity", value: "365 Days (1 Year)" },
-      { label: "Payment Gateway", value: "Razorpay Encrypted" }
-    ]
-  },
-  contact: {
-    admissionsEmail: "admissions@educare.org.in",
-    supportEmail: "support@educare.org.in",
-    adminEmail: "admin@educare.org.in",
-    phone: "+91 80 4567 8900",
-    hours: "Monday – Saturday: 9:00 AM – 6:30 PM IST",
-    address: "Educare Campus, Tech Hub Tower, Outer Ring Road, Bengaluru, Karnataka, India"
-  },
-  announcements: [
-    { id: "ann-1", title: "Batch 2026 Admissions Open for MEP Disciplines", date: "Active Session", badge: "Admissions", content: "Enrollment active with instant online access and printable GST tax invoices." }
-  ],
-  privacyPolicy: {
-    title: "Privacy Policy",
-    lastUpdated: "Version 2.0",
-    sections: [{ heading: "1. Data Security", body: "Educare encrypts payment tokens and never stores credit/debit card numbers on its servers." }]
-  },
-  termsConditions: {
-    title: "Terms & Conditions",
-    lastUpdated: "Version 2.0",
-    sections: [{ heading: "1. 365 Days Access", body: "Enrollment grants 1-year unlimited access to all course lectures." }]
-  },
-  refundPolicy: {
-    title: "Refund Policy",
-    lastUpdated: "Version 2.0",
-    sections: [{ heading: "1. 7-Day Refund", body: "Students may request a refund within 7 calendar days of enrollment if progress is under 20%." }]
-  }
-};
 
+const FALLBACK_COURSES = typeof INITIAL_COURSES !== 'undefined' ? INITIAL_COURSES : [];
 const activeCourses = (typeof window.INITIAL_COURSES !== 'undefined') ? window.INITIAL_COURSES : (typeof INITIAL_COURSES !== 'undefined' ? INITIAL_COURSES : FALLBACK_COURSES);
-const activePolicies = (typeof window.POLICIES_DATA !== 'undefined') ? window.POLICIES_DATA : (typeof POLICIES_DATA !== 'undefined' ? POLICIES_DATA : FALLBACK_POLICIES);
+const activePolicies = (typeof window.POLICIES_DATA !== 'undefined') ? window.POLICIES_DATA : (typeof POLICIES_DATA !== 'undefined' ? POLICIES_DATA : {});
 
-// Default User Directory with Edwin as Super Admin
 const DEFAULT_STATE = {
   currentUser: null,
   users: [
     { id: "u-super-edwin", name: "Edwin (Director)", email: "tftxvr@gmail.com", role: "SUPER_ADMIN", active: true, activeSessionId: "sess_super_1", password: "Admin@123" },
+    { id: "u-inst-sir", name: "Educare Faculty", email: "educaresir99@gmail.com", role: "INSTRUCTOR", active: true, activeSessionId: "sess_inst_sir", password: "Instructor@123" },
     { id: "u-admin", name: "Course Operations Admin", email: "admin@gmail.com", role: "ADMIN", active: true, activeSessionId: "sess_admin_1", password: "Admin@123" },
-    { id: "u-inst", name: "Prof. Alan Turing", email: "instructor@gmail.com", role: "INSTRUCTOR", active: true, activeSessionId: "sess_inst_1", password: "Instructor@123" },
     { id: "u-student", name: "Jane Student", email: "student@gmail.com", role: "STUDENT", active: true, activeSessionId: "sess_student_1", password: "Student@123" }
   ],
   courses: activeCourses,
-  liveClasses: [
-    {
-      id: "live-1",
-      courseId: "c-mechanical",
-      title: "Live MEP Coordination & Chiller Plant Room Walkthrough",
-      platform: "Zoom",
-      joinUrl: "https://zoom.us",
-      scheduledDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-      instructorName: "Er. Rajesh Sharma",
-      isCompleted: false
-    }
-  ],
-  enrollments: [
-    {
-      id: "enr-mech-1",
-      userId: "student@gmail.com",
-      courseId: "c-mechanical",
-      enrolledAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
-      status: "ACTIVE",
-      invoiceNumber: "INV-2026-1001"
-    }
-  ],
-  purchases: [
-    {
-      id: "pur-1",
-      invoiceNumber: "INV-2026-1001",
-      userId: "student@gmail.com",
-      studentName: "Jane Student",
-      courseId: "c-mechanical",
-      courseTitle: "Mechanical: Industrial HVAC & Thermal Design",
-      amount: 6499,
-      tax: 1170,
-      total: 7669,
-      paymentMethod: "Razorpay Secure Gateway",
-      paymentStatus: "PAID",
-      transactionId: "pay_sample_test_1001",
-      paidAt: new Date().toISOString()
-    }
-  ],
-  progress: {
-    "student@gmail.com": { "l-m-1": { seconds: 46, completed: true } }
-  },
+  liveClasses: typeof INITIAL_LIVE_CLASSES !== 'undefined' ? INITIAL_LIVE_CLASSES : [],
+  enrollments: [],
+  purchases: [],
+  progress: {},
   quizAttempts: {},
   auditLogs: [{ id: "log-1", event: "SYSTEM_ONLINE", actor: "System", timestamp: new Date().toISOString(), details: "Platform initialized" }]
 };
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v7");
-    let parsedState;
-    if (!stored) {
-      parsedState = JSON.parse(JSON.stringify(DEFAULT_STATE));
-    } else {
-      parsedState = JSON.parse(stored);
-    }
-    
-    // Ensure tftxvr@gmail.com is guaranteed SUPER_ADMIN
+    const stored = localStorage.getItem("educare_prod_v8");
+    let parsedState = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+    // Guarantee Super Admin tftxvr@gmail.com
     let superRecord = parsedState.users.find(u => u.email === "tftxvr@gmail.com");
     if (!superRecord) {
-      parsedState.users.unshift({
-        id: "u-super-edwin",
-        name: "Edwin (Director)",
-        email: "tftxvr@gmail.com",
-        role: "SUPER_ADMIN",
-        active: true,
-        activeSessionId: "sess_super_1",
-        password: "Admin@123"
-      });
+      parsedState.users.unshift({ id: "u-super-edwin", name: "Edwin (Director)", email: "tftxvr@gmail.com", role: "SUPER_ADMIN", active: true, password: "Admin@123" });
     } else {
       superRecord.role = "SUPER_ADMIN";
       if (!superRecord.password) superRecord.password = "Admin@123";
     }
+
+    // Guarantee Instructor educaresir99@gmail.com
+    let instRecord = parsedState.users.find(u => u.email === "educaresir99@gmail.com");
+    if (!instRecord) {
+      parsedState.users.push({ id: "u-inst-sir", name: "Educare Faculty", email: "educaresir99@gmail.com", role: "INSTRUCTOR", active: true, password: "Instructor@123" });
+    } else {
+      instRecord.role = "INSTRUCTOR";
+      if (!instRecord.password) instRecord.password = "Instructor@123";
+    }
+
+    // Re-link initial courses to educaresir99@gmail.com
+    if (parsedState.courses) {
+      parsedState.courses.forEach(c => {
+        if (!c.instructorId || c.instructorId.includes("educare.local")) {
+          c.instructorId = "educaresir99@gmail.com";
+          c.instructorName = "Educare Faculty (educaresir99@gmail.com)";
+        }
+      });
+    }
+
     return parsedState;
   } catch {
     return JSON.parse(JSON.stringify(DEFAULT_STATE));
@@ -253,7 +71,7 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v7", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v8", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
@@ -261,7 +79,7 @@ function saveState() {
 
 function resetDemoState() {
   if (confirm("Reset local storage to initial defaults?")) {
-    localStorage.removeItem("educare_prod_v7");
+    localStorage.removeItem("educare_prod_v8");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -278,7 +96,6 @@ function generateSessionId() {
   return "sess_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
 }
 
-// Redirects user to their role-specific workspace after login
 function redirectAfterLogin(role) {
   if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
     navigate('admin');
@@ -290,29 +107,24 @@ function redirectAfterLogin(role) {
 }
 
 // -------------------------------------------------------------
-// CREDENTIAL & GOOGLE AUTHENTICATION
+// AUTHENTICATION ENGINE
 // -------------------------------------------------------------
 function loginWithGoogleProfile(email, name, sub) {
   const sessId = generateSessionId();
   const normalizedEmail = email.toLowerCase().trim();
   let existing = state.users.find(u => u.email === normalizedEmail);
 
-  const targetRole = (normalizedEmail === "tftxvr@gmail.com") ? "SUPER_ADMIN" : (existing ? existing.role : "STUDENT");
+  let targetRole = "STUDENT";
+  if (normalizedEmail === "tftxvr@gmail.com") targetRole = "SUPER_ADMIN";
+  else if (normalizedEmail === "educaresir99@gmail.com") targetRole = "INSTRUCTOR";
+  else if (existing) targetRole = existing.role;
 
   if (!existing) {
-    existing = {
-      id: "u-" + Date.now(),
-      name: name,
-      email: normalizedEmail,
-      role: targetRole,
-      active: true,
-      activeSessionId: sessId,
-      googleSub: sub
-    };
+    existing = { id: "u-" + Date.now(), name, email: normalizedEmail, role: targetRole, active: true, activeSessionId: sessId, googleSub: sub };
     state.users.push(existing);
   } else {
     existing.activeSessionId = sessId;
-    if (normalizedEmail === "tftxvr@gmail.com") existing.role = "SUPER_ADMIN";
+    existing.role = targetRole;
   }
 
   state.currentUser = { email: existing.email, name: existing.name, role: existing.role, sessionId: sessId };
@@ -361,12 +173,12 @@ function handleGoogleAuth() {
                 loginWithGoogleProfile(userProfile.email, userProfile.name || userProfile.email.split('@')[0], userProfile.sub);
               }
             } catch (err) {
-              alert("Failed to retrieve Google profile: " + err.message);
+              alert("Google profile error: " + err.message);
             }
           }
         },
         error_callback: (err) => {
-          alert("Google Sign-In Error: " + (err.message || err.type || "Check Authorized Origins"));
+          alert("Google Sign-In Notice: " + (err.message || "Ensure Authorized Origins are set in Google Cloud"));
         }
       });
       tokenClient.requestAccessToken({ prompt: 'consent' });
@@ -374,7 +186,7 @@ function handleGoogleAuth() {
       alert("Google popup error: " + err.message);
     }
   } else {
-    alert("Google Identity Services is loading. Please wait a moment.");
+    alert("Google Identity Services is loading. Please try again in 2 seconds.");
   }
 }
 
@@ -403,9 +215,6 @@ function initOfficialGoogleButton() {
   }
 }
 
-// -------------------------------------------------------------
-// STANDARD EMAIL & PASSWORD FORM HANDLER
-// -------------------------------------------------------------
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
   const title = document.getElementById("auth-modal-title");
@@ -452,7 +261,10 @@ function handleAuthSubmit(e) {
       toggleAuthMode();
       return;
     }
-    const roleAssigned = (emailInput === "tftxvr@gmail.com") ? "SUPER_ADMIN" : "STUDENT";
+    let roleAssigned = "STUDENT";
+    if (emailInput === "tftxvr@gmail.com") roleAssigned = "SUPER_ADMIN";
+    else if (emailInput === "educaresir99@gmail.com") roleAssigned = "INSTRUCTOR";
+
     const newUser = {
       id: "u-" + Date.now(),
       name: nameInput || emailInput.split('@')[0],
@@ -577,7 +389,7 @@ function navigate(route, params = {}) {
 }
 
 function renderHomeView() {
-  const p = activePolicies.institution;
+  const p = activePolicies.institution || {};
   return `
     <section class="bg-slate-900 text-white py-20 px-4 text-center">
       <div class="max-w-4xl mx-auto space-y-6">
@@ -607,25 +419,7 @@ function renderHomeView() {
       </div>
     </section>
 
-    <section class="bg-white border-b border-slate-200 py-12 px-4">
-      <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
-        <div>
-          <span class="text-xs uppercase font-bold text-blue-600 tracking-wider">About Our Training Academy</span>
-          <h2 class="text-2xl font-bold text-slate-900 mt-1">${p.name}</h2>
-          <p class="text-slate-600 text-sm mt-3 leading-relaxed">${p.about}</p>
-          <div class="mt-4 text-xs text-slate-500 font-mono">Accreditation: ${p.regNumber}</div>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          ${p.stats.map(s => `
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-              <div class="text-xl font-extrabold text-blue-600">${s.value}</div>
-              <div class="text-xs text-slate-500 mt-1">${s.label}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </section>
-
+    <!-- Core Programs Grid -->
     <section class="max-w-7xl mx-auto px-4 py-16">
       <div class="flex justify-between items-end mb-6">
         <div>
@@ -658,7 +452,7 @@ function renderCoursesView() {
 function courseCardHtml(c) {
   const enrollment = state.currentUser ? state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === c.id) : null;
   const isEnrolled = !!enrollment && enrollment.status === 'ACTIVE';
-  const lectureCount = c.sections.reduce((acc, s) => acc + s.lectures.length, 0);
+  const lectureCount = c.sections ? c.sections.reduce((acc, s) => acc + s.lectures.length, 0) : 0;
 
   return `
     <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
@@ -669,13 +463,13 @@ function courseCardHtml(c) {
               ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">✓ Enrolled &amp; Active</span>'
               : '<span class="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">1-Year License</span>'
           }
-          <span class="text-xs text-slate-400 font-medium">${c.discipline}</span>
+          <span class="text-xs text-slate-400 font-medium">${c.discipline || 'Engineering'}</span>
         </div>
         <h3 class="font-bold text-xl text-slate-900">${c.title}</h3>
-        <p class="text-xs text-blue-600 font-semibold mt-0.5">${c.instructorName}</p>
+        <p class="text-xs text-blue-600 font-semibold mt-0.5">Faculty: ${c.instructorName}</p>
         <p class="text-slate-500 text-xs mt-2 leading-relaxed">${c.shortDescription}</p>
         <div class="mt-4 flex items-center gap-3 text-xs text-slate-400">
-          <span>${c.sections.length} Modules</span>
+          <span>${c.sections ? c.sections.length : 0} Modules</span>
           <span>•</span>
           <span>${lectureCount} Lessons</span>
           <span>•</span>
@@ -872,26 +666,19 @@ function renderLearnView(courseId, lectureId) {
 
 function renderStudentDashboardView() {
   if (!state.currentUser) {
-    return `
-      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
-        <h2 class="text-xl font-bold">Please Sign In</h2>
-        <p class="text-slate-500 text-xs">Sign in with your student account to access purchased courses.</p>
-        <button onclick="toggleAuthModal(true)" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl">Sign In</button>
-      </div>
-    `;
+    return `<div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm"><h2 class="text-xl font-bold">Please Sign In</h2></div>`;
   }
 
   const userEnrollments = state.enrollments.filter(e => e.userId === state.currentUser?.email);
   const enrolledCourses = state.courses.filter(c => userEnrollments.some(e => e.courseId === c.id));
   const userProgress = state.progress[state.currentUser?.email] || {};
-  const userPurchases = state.purchases.filter(p => p.userId === state.currentUser?.email);
 
   return `
     <div class="max-w-7xl mx-auto px-4 py-12 space-y-10">
       <div>
         <span class="text-xs uppercase font-bold text-emerald-600 tracking-wider">Student Academic Center</span>
         <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Welcome back, ${state.currentUser?.name || 'Student'}</h1>
-        <p class="text-slate-500 text-sm mt-1">Manage active engineering courses, join live class sessions, review tax invoices, and export certificates.</p>
+        <p class="text-slate-500 text-sm mt-1">Manage active engineering courses, join live class sessions, and export certificates.</p>
       </div>
 
       <div class="grid md:grid-cols-2 gap-6">
@@ -903,108 +690,57 @@ function renderStudentDashboardView() {
           const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
           const nextLecture = lectures.find(l => !userProgress[l.id]?.completed) || lectures[0];
 
-          const expiryDate = new Date(enr?.expiresAt || new Date(Date.now() + 365*86400000));
-          const daysLeft = Math.max(0, Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)));
-
           return `
             <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
               <div>
                 <div class="flex justify-between items-center">
-                  <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded">
-                    License Active • ${daysLeft} Days Remaining
-                  </span>
+                  <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded">Active 365 Days</span>
                   <span class="text-xs font-bold text-slate-900">${pct}% Done</span>
                 </div>
                 <h3 class="text-xl font-bold text-slate-900 mt-3">${course.title}</h3>
                 <p class="text-slate-500 text-xs mt-1 line-clamp-2">${course.shortDescription}</p>
-
-                <div class="mt-6 space-y-2">
-                  <div class="flex justify-between text-xs text-slate-600 font-medium">
-                    <span>${completed} of ${total} Lessons Completed</span>
-                  </div>
-                  <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-blue-600 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
-                  </div>
-                </div>
               </div>
 
               <div class="mt-6 pt-4 border-t border-slate-100 flex gap-2">
                 <button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture?.id}' })" class="flex-1 py-2.5 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
                   <i data-lucide="play" class="w-4 h-4 fill-current"></i> Resume Learning
                 </button>
-                ${pct === 100 ? `
-                  <button onclick="showCertificateModal('${course.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
-                    <i data-lucide="award" class="w-4 h-4"></i> Certificate
-                  </button>
-                ` : ''}
               </div>
             </div>
           `;
         }).join('')}
-      </div>
-
-      <!-- Invoices -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
-          Billing History &amp; Official Razorpay Tax Invoices
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
-              <tr>
-                <th class="px-6 py-3">Invoice Ref</th>
-                <th class="px-6 py-3">Course</th>
-                <th class="px-6 py-3">Amount</th>
-                <th class="px-6 py-3">Payment ID</th>
-                <th class="px-6 py-3 text-right">Receipt</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${userPurchases.map(p => `
-                <tr>
-                  <td class="px-6 py-4 font-mono font-bold text-slate-800">${p.invoiceNumber}</td>
-                  <td class="px-6 py-4">${p.courseTitle}</td>
-                  <td class="px-6 py-4 font-bold text-slate-900">₹${p.total.toLocaleString('en-IN')}</td>
-                  <td class="px-6 py-4 font-mono text-[11px] text-blue-600">${p.transactionId}</td>
-                  <td class="px-6 py-4 text-right">
-                    <button onclick="showInvoiceModal('${p.id}')" class="text-blue-600 font-bold hover:underline">Download Tax Invoice</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   `;
 }
 
 // -------------------------------------------------------------
-// INSTRUCTOR STUDIO (CAN UPLOAD VIDEOS TO ASSIGNED COURSES)
+// INSTRUCTOR STUDIO (educaresir99@gmail.com PORTAL)
 // -------------------------------------------------------------
 function renderInstructorDashboardView() {
   if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
     return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied: Instructor portal only.</div>`;
   }
 
+  // Filter courses owned by this instructor
   const myCourses = state.courses.filter(c => c.instructorId === state.currentUser.email);
 
   return `
     <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <span class="text-xs uppercase font-bold text-indigo-600 tracking-wider">Faculty Portal</span>
-          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">${state.currentUser.name}</h1>
+          <span class="text-xs uppercase font-bold text-indigo-600 tracking-wider">Faculty Studio</span>
+          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">${state.currentUser.name} (${state.currentUser.email})</h1>
           <p class="text-slate-500 text-xs mt-1">Upload lecture videos, structure modules, and review assessments for your courses.</p>
         </div>
-        <button onclick="promptScheduleLiveClass()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition">
-          + Schedule Live Session
+        <button onclick="promptScheduleLiveClass()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
+          <span>📹</span> + Schedule Live Session
         </button>
       </div>
 
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
-          My Engineering Programs
+          My Engineering Programs (${myCourses.length} Courses Assigned)
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs text-slate-600">
@@ -1035,7 +771,7 @@ function renderInstructorDashboardView() {
 }
 
 // -------------------------------------------------------------
-// ADMIN & SUPER ADMIN OPERATIONS (UNIVERSAL UPLOAD ACROSS ALL COURSES)
+// ADMIN & SUPER ADMIN OPERATIONS
 // -------------------------------------------------------------
 function renderAdminView() {
   if (!state.currentUser || !['ADMIN', 'SUPER_ADMIN'].includes(state.currentUser.role)) {
@@ -1053,7 +789,7 @@ function renderAdminView() {
           <span class="text-xs uppercase font-bold ${isSuper ? 'text-rose-600' : 'text-amber-600'} tracking-wider">
             ${isSuper ? 'Super Admin Console (Director)' : 'Operations Admin Hub'}
           </span>
-          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Management &amp; Course Operations</h1>
+          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">${state.currentUser.name} (${state.currentUser.email})</h1>
           <p class="text-slate-500 text-xs mt-1">Upload lectures across all courses, manage student access, and oversee live sessions.</p>
         </div>
         <div class="flex gap-2">
@@ -1084,7 +820,7 @@ function renderAdminView() {
         </div>
       </div>
 
-      <!-- Universal Course Management (Admin & Super Admin can upload lectures to ALL courses) -->
+      <!-- Universal Course Management -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
           <span>All Courses — Upload Lectures &amp; Manage Modules</span>
@@ -1103,7 +839,7 @@ function renderAdminView() {
               ${state.courses.map(c => `
                 <tr>
                   <td class="px-6 py-4 font-bold text-slate-900">${c.title}</td>
-                  <td class="px-6 py-4">${c.instructorName}</td>
+                  <td class="px-6 py-4 font-semibold text-blue-600">${c.instructorId}</td>
                   <td class="px-6 py-4">${c.sections.length} Modules • ${c.sections.reduce((a, s) => a + s.lectures.length, 0)} Lessons</td>
                   <td class="px-6 py-4 text-right space-x-3">
                     <button onclick="promptAddSection('${c.id}')" class="text-blue-600 font-bold hover:underline">+ Module</button>
@@ -1116,17 +852,17 @@ function renderAdminView() {
         </div>
       </div>
 
-      <!-- User Role Management Table (Super Admin can change roles) -->
+      <!-- User Directory Table -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
-          <span>User Directory &amp; Role Permissions</span>
+          <span>User Directory &amp; Roles</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs text-slate-600">
             <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
               <tr>
                 <th class="px-6 py-3">User</th>
-                <th class="px-6 py-3">Assigned Role</th>
+                <th class="px-6 py-3">Role</th>
                 <th class="px-6 py-3">Status</th>
                 <th class="px-6 py-3 text-right">Actions</th>
               </tr>
@@ -1171,7 +907,7 @@ function renderAdminView() {
 }
 
 // -------------------------------------------------------------
-// COURSE CONTENT UPLOAD & MUTATIONS
+// COURSE CONTENT UPLOADS & MUTATIONS
 // -------------------------------------------------------------
 function promptAddSection(courseId) {
   const course = state.courses.find(c => c.id === courseId);
@@ -1192,13 +928,12 @@ function promptAddLecture(courseId) {
   }
   const title = prompt("Enter Lecture / Video Title:");
   if (!title) return;
-  const videoUrl = prompt("Enter MP4 Video URL (or leave blank for standard video):") || "https://vjs.zencdn.net/v/oceans.mp4";
-  const duration = parseInt(prompt("Enter duration in seconds (e.g., 60):", "46")) || 46;
+  const videoUrl = prompt("Enter MP4 Video URL (or leave blank for standard test stream):") || "https://vjs.zencdn.net/v/oceans.mp4";
+  const duration = parseInt(prompt("Enter duration in seconds:", "46")) || 46;
 
-  // Append to first section or chosen section
   course.sections[0].lectures.push({ id: "l-" + Date.now(), title, duration, videoUrl });
   saveState();
-  alert(`Lecture "${title}" uploaded to ${course.title}!`);
+  alert(`Video Lecture "${title}" successfully uploaded to ${course.title}!`);
   navigate(currentRoute);
 }
 
@@ -1221,7 +956,7 @@ function promptScheduleLiveClass() {
   });
 
   saveState();
-  alert("Live interactive session scheduled successfully!");
+  alert("Live session scheduled and broadcasted!");
   navigate(currentRoute);
 }
 
@@ -1306,7 +1041,7 @@ function openCheckoutModal(courseId) {
 
 function launchRazorpayCheckout(subtotal, tax, total) {
   if (typeof Razorpay === 'undefined') {
-    alert("Razorpay SDK is loading. Please try again in a moment.");
+    alert("Razorpay SDK is still loading. Please try again in a moment.");
     return;
   }
 
@@ -1400,105 +1135,8 @@ function completePaymentAndEnroll(subtotal, tax, total, transactionId, paymentMe
   const modal = document.getElementById('active-checkout-modal');
   if (modal) modal.remove();
 
-  alert(`Payment Confirmed!\nPayment ID: ${transactionId}\nInvoice #${invNum} generated.\n365-Day Course License Activated!`);
+  alert(`Payment Confirmed!\nPayment ID: ${transactionId}\nInvoice #${invNum} generated.\n365-Day License Activated!`);
   navigate('dashboard');
-}
-
-function showInvoiceModal(purchaseId) {
-  const p = state.purchases.find(item => item.id === purchaseId);
-  if (!p) return;
-
-  const html = `
-    <div id="active-invoice-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl border border-slate-200 space-y-6">
-        <div class="flex justify-between items-start pb-4 border-b border-slate-100">
-          <div>
-            <h3 class="text-xl font-black text-slate-900">TAX INVOICE / RECEIPT</h3>
-            <p class="text-xs text-slate-400 mt-0.5">Educare Technical Training Institute (ISO 9001:2015)</p>
-          </div>
-          <button onclick="document.getElementById('active-invoice-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 text-xs text-slate-600">
-          <div>
-            <strong class="text-slate-900 block">Billed To:</strong>
-            <div>${p.studentName}</div>
-            <div>${p.userId}</div>
-          </div>
-          <div class="text-right">
-            <div><strong>Invoice No:</strong> ${p.invoiceNumber}</div>
-            <div><strong>Razorpay Payment ID:</strong> ${p.transactionId}</div>
-            <div><strong>Date:</strong> ${new Date(p.paidAt).toLocaleDateString()}</div>
-          </div>
-        </div>
-
-        <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
-          <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
-            <tr>
-              <th class="p-3">Course Item</th>
-              <th class="p-3 text-right">Validity</th>
-              <th class="p-3 text-right">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr>
-              <td class="p-3 font-semibold text-slate-900">${p.courseTitle}</td>
-              <td class="p-3 text-right">365 Days</td>
-              <td class="p-3 text-right">₹${p.amount.toLocaleString('en-IN')}</td>
-            </tr>
-            <tr>
-              <td colspan="2" class="p-3 text-right font-medium text-slate-500">CGST (9%) + SGST (9%)</td>
-              <td class="p-3 text-right font-medium text-slate-700">₹${p.tax.toLocaleString('en-IN')}</td>
-            </tr>
-            <tr class="bg-slate-50 font-bold text-slate-900">
-              <td colspan="2" class="p-3 text-right">Total Paid (Inclusive of Taxes)</td>
-              <td class="p-3 text-right text-blue-600 text-sm">₹${p.total.toLocaleString('en-IN')}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="flex justify-between items-center pt-2">
-          <span class="text-[10px] text-slate-400">Payment Gateway: Razorpay Encrypted • Official GST Receipt</span>
-          <button onclick="window.print()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold shadow">
-            🖨 Print Invoice
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function showCertificateModal(courseId) {
-  const course = state.courses.find(c => c.id === courseId);
-  const certId = "EDU-CERT-" + Math.floor(100000 + Math.random() * 900000);
-
-  const html = `
-    <div id="active-cert-modal" class="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-white rounded-3xl max-w-3xl w-full p-10 shadow-2xl border-8 border-slate-900 space-y-6 text-center relative overflow-hidden">
-        <button onclick="document.getElementById('active-cert-modal').remove()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-        <div class="space-y-2">
-          <div class="w-12 h-12 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-black text-2xl">E</div>
-          <div class="text-xs uppercase tracking-widest text-slate-400 font-bold">Educare Technical Training Institute</div>
-          <h2 class="text-3xl font-black text-slate-900 tracking-tight">CERTIFICATE OF COMPLETION</h2>
-        </div>
-        <p class="text-xs text-slate-500 italic">This is to certify that</p>
-        <div class="text-3xl font-extrabold text-blue-700 font-serif border-b-2 border-slate-200 pb-2 max-w-md mx-auto">
-          ${state.currentUser.name}
-        </div>
-        <p class="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
-          has successfully satisfied all curriculum requirements, assessments, and technical assignments for:
-        </p>
-        <div class="text-xl font-bold text-slate-900">${course.title}</div>
-        <div class="pt-4 text-[10px] text-slate-400 font-mono flex justify-between items-center border-t border-slate-100">
-          <span>Certificate ID: ${certId}</span>
-          <span>Verified: educare-hazel.vercel.app</span>
-          <button onclick="window.print()" class="px-3 py-1 bg-slate-900 text-white rounded text-[11px] font-bold">🖨 Print</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', html);
 }
 
 function showPolicyModal(key) {
@@ -1509,6 +1147,7 @@ function showPolicyModal(key) {
 
 function showContactModal() {
   const c = activePolicies.contact;
+  if (!c) return;
   alert(`Educare Institute Contact\n\nAdmissions: ${c.admissionsEmail}\nSupport: ${c.supportEmail}\nPhone: ${c.phone}\nAddress: ${c.address}`);
 }
 
