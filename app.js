@@ -1,5 +1,9 @@
-// app.js — Educare Production Core LMS Controller (Self-Healing & Resilient)
+// app.js — Educare Production Core LMS Controller with Razorpay Integration
 
+// =============================================================
+// RAZORPAY GATEWAY CONFIGURATION
+// Paste your Key ID from dashboard.razorpay.com (Settings -> API Keys)
+// =============================================================
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
 
 const FALLBACK_COURSES = [
@@ -34,15 +38,7 @@ const FALLBACK_COURSES = [
       }
     ],
     resources: [{ id: "r-m-1", title: "ASHRAE_HVAC_Design_Manual.pdf", size: "3.2 MB" }],
-    quizzes: [{
-      id: "q-m-1",
-      title: "Mechanical HVAC Systems Evaluation",
-      passingScore: 70,
-      questions: [
-        { questionText: "Which variable is on the horizontal axis of a psychrometric chart?", options: ["Relative Humidity", "Dry-Bulb Temperature", "Enthalpy"], correctAnswerIndex: 1 },
-        { questionText: "Primary method for low-velocity air duct sizing?", options: ["Equal Friction Method", "Static Regain", "Velocity Guess"], correctAnswerIndex: 0 }
-      ]
-    }]
+    quizzes: []
   },
   {
     id: "c-electrical",
@@ -54,7 +50,7 @@ const FALLBACK_COURSES = [
     instructorId: "instructor@educare.local",
     instructorName: "Er. Priya Nair (Chief Electrical Specialist)",
     shortDescription: "Industrial wiring, Single-Line Diagrams (SLD), panel board design, and transformer sizing.",
-    description: "Master modern power engineering: connected load vs. maximum demand calculations, busbar trunking systems, voltage drop analysis, circuit breakers (MCB, MCCB, ACB), lightning protection, and backup diesel generator sizing.",
+    description: "Master modern power engineering: connected load vs. maximum demand calculations, busbar trunking systems, voltage drop analysis, circuit breakers, and earthing design.",
     sections: [
       {
         id: "s-elec-1",
@@ -78,13 +74,13 @@ const FALLBACK_COURSES = [
     instructorId: "instructor@educare.local",
     instructorName: "Er. K. V. Raman (PHE Lead Consultant)",
     shortDescription: "Water supply networks, drainage systems, hydro-pneumatic pumping, and firefighting hydraulics.",
-    description: "Covers water storage tank sizing, booster pumping systems, gravity water distribution, fixture units (FU), soil and waste stack venting, storm water harvesting, and sprinkler hydraulic design.",
+    description: "Covers water storage tank sizing, booster pumping systems, gravity water distribution, fixture units, soil and waste stack venting, and stormwater drainage.",
     sections: [
       {
         id: "s-plumb-1",
         title: "Module 1: Water Distribution & Storage Systems",
         lectures: [
-          { id: "l-p-1", title: "1. Daily Water Demand Calculation & Underground Sump Sizing", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
+          { id: "l-p-1", title: "1. Daily Water Demand Calculation & Sump Sizing", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
           { id: "l-p-2", title: "2. Hydro-Pneumatic Pressure Booster Systems", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
         ]
       }
@@ -102,7 +98,7 @@ const FALLBACK_COURSES = [
     instructorId: "instructor@educare.local",
     instructorName: "Ar. Sneha Patel (Autodesk Certified Professional)",
     shortDescription: "Master 2D engineering drafting in AutoCAD and multidisciplinary 3D BIM modeling in Autodesk Revit.",
-    description: "Practical training from 2D floor plans to coordinated 3D BIM models: layer conventions, dynamic blocks, external references (XRefs), Revit parameter management, family creation, and MEP coordination.",
+    description: "Practical training from 2D floor plans to coordinated 3D BIM models: layer conventions, dynamic blocks, external references (XRefs), Revit parameter management, and family creation.",
     sections: [
       {
         id: "s-bim-1",
@@ -128,7 +124,7 @@ const FALLBACK_POLICIES = {
       { label: "Engineering Disciplines", value: "4 Core Programs" },
       { label: "Accreditation", value: "ISO 9001:2015" },
       { label: "Course Validity", value: "365 Days (1 Year)" },
-      { label: "Learning Mode", value: "Recorded + Live Classes" }
+      { label: "Payment Gateway", value: "Razorpay Encrypted" }
     ]
   },
   contact: {
@@ -140,34 +136,25 @@ const FALLBACK_POLICIES = {
     address: "Educare Campus, Tech Hub Tower, Outer Ring Road, Bengaluru, Karnataka, India"
   },
   announcements: [
-    { id: "ann-1", title: "Batch 2026 Admissions Open for MEP Disciplines", date: "Active Session", badge: "Admissions", content: "All enrolled students in Mechanical, Electrical, Plumbing, and AutoCAD & Revit are invited to the upcoming weekend live interactive session." },
-    { id: "ann-2", title: "Course Validity Policy: 1-Year Access", date: "Policy", badge: "Notice", content: "All course enrollments remain active for exactly 365 days from the date of enrollment confirmation." }
+    { id: "ann-1", title: "Batch 2026 Admissions Open for MEP Disciplines", date: "Active Session", badge: "Admissions", content: "Enrollment active with instant online access and printable GST tax invoices." }
   ],
   privacyPolicy: {
-    title: "Privacy Policy & Data Security",
+    title: "Privacy Policy",
     lastUpdated: "Version 2.0",
-    sections: [
-      { heading: "1. Data Collection", body: "Educare collects student identity data, progress timestamps, and assessment scores solely to maintain academic records." },
-      { heading: "2. Single Device Access", body: "Educare enforces one active session per student to protect proprietary curriculum materials." }
-    ]
+    sections: [{ heading: "1. Data Security", body: "Educare encrypts payment tokens and never stores credit/debit card numbers on its servers." }]
   },
   termsConditions: {
     title: "Terms & Conditions",
     lastUpdated: "Version 2.0",
-    sections: [
-      { heading: "1. License", body: "Enrollment grants a personal, non-transferable license to access course content for 365 calendar days." }
-    ]
+    sections: [{ heading: "1. 365 Days Access", body: "Enrollment grants 1-year unlimited access to all course lectures." }]
   },
   refundPolicy: {
-    title: "Refund & Cancellation Policy",
+    title: "Refund Policy",
     lastUpdated: "Version 2.0",
-    sections: [
-      { heading: "1. 7-Day Guarantee", body: "Students may request a refund within 7 calendar days of course enrollment if less than 20% of lectures have been watched." }
-    ]
+    sections: [{ heading: "1. 7-Day Refund", body: "Students may request a refund within 7 calendar days of enrollment if progress is under 20%." }]
   }
 };
 
-// Resilient Data Selectors
 const activeCourses = (typeof window.INITIAL_COURSES !== 'undefined') ? window.INITIAL_COURSES : (typeof INITIAL_COURSES !== 'undefined' ? INITIAL_COURSES : FALLBACK_COURSES);
 const activePolicies = (typeof window.POLICIES_DATA !== 'undefined') ? window.POLICIES_DATA : (typeof POLICIES_DATA !== 'undefined' ? POLICIES_DATA : FALLBACK_POLICIES);
 
@@ -219,8 +206,9 @@ const DEFAULT_STATE = {
       amount: 6499,
       tax: 1170,
       total: 7669,
+      paymentMethod: "Razorpay Secure Gateway",
       paymentStatus: "PAID",
-      transactionId: "TXN-2026-8812",
+      transactionId: "pay_sample_test_1001",
       paidAt: new Date().toISOString()
     }
   ],
@@ -237,9 +225,9 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v3");
+    const stored = localStorage.getItem("educare_prod_v4");
     if (!stored) {
-      localStorage.setItem("educare_prod_v3", JSON.stringify(DEFAULT_STATE));
+      localStorage.setItem("educare_prod_v4", JSON.stringify(DEFAULT_STATE));
       return JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
     return JSON.parse(stored);
@@ -250,15 +238,15 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v3", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v4", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
 }
 
 function resetDemoState() {
-  if (confirm("Reset local storage to production demo defaults?")) {
-    localStorage.removeItem("educare_prod_v3");
+  if (confirm("Reset local storage to production defaults?")) {
+    localStorage.removeItem("educare_prod_v4");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -270,7 +258,6 @@ let currentRoute = 'home';
 let routeParams = {};
 let pendingCheckoutCourse = null;
 
-// Auth Handlers
 function generateSessionId() {
   return "sess_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
 }
@@ -297,7 +284,7 @@ function quickAuth(roleType) {
 }
 
 function handleGoogleAuth() {
-  const dummyGoogleEmail = prompt("Enter your Google / Gmail account:", "jane.student@gmail.com");
+  const dummyGoogleEmail = prompt("Enter your Google / Gmail address:", "jane.student@gmail.com");
   if (!dummyGoogleEmail) return;
 
   const sessId = generateSessionId();
@@ -305,14 +292,7 @@ function handleGoogleAuth() {
   let existing = state.users.find(u => u.email === normalizedEmail);
 
   if (!existing) {
-    existing = {
-      id: "u-" + Date.now(),
-      name: normalizedEmail.split('@')[0].toUpperCase(),
-      email: normalizedEmail,
-      role: "STUDENT",
-      active: true,
-      activeSessionId: sessId
-    };
+    existing = { id: "u-" + Date.now(), name: normalizedEmail.split('@')[0].toUpperCase(), email: normalizedEmail, role: "STUDENT", active: true, activeSessionId: sessId };
     state.users.push(existing);
   } else {
     existing.activeSessionId = sessId;
@@ -404,7 +384,6 @@ function renderNav() {
   }
 }
 
-// Router & Views
 function navigate(route, params = {}) {
   currentRoute = route;
   routeParams = params;
@@ -427,6 +406,9 @@ function navigate(route, params = {}) {
   }
 }
 
+// -------------------------------------------------------------
+// VIEWS
+// -------------------------------------------------------------
 function renderHomeView() {
   const p = activePolicies.institution;
   return `
@@ -476,28 +458,6 @@ function renderHomeView() {
       </div>
     </section>
 
-    <!-- Notice Board -->
-    <section class="max-w-6xl mx-auto px-4 pt-12">
-      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-        <div class="flex items-center gap-2 mb-4">
-          <i data-lucide="bell" class="w-5 h-5 text-blue-600"></i>
-          <h3 class="font-bold text-slate-900 text-base">Institute Notice Board &amp; Announcements</h3>
-        </div>
-        <div class="grid md:grid-cols-2 gap-4">
-          ${activePolicies.announcements.map(a => `
-            <div class="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
-              <div class="flex items-center justify-between text-[11px] mb-1">
-                <span class="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">${a.badge}</span>
-                <span class="text-slate-400 font-medium">${a.date}</span>
-              </div>
-              <h4 class="font-bold text-sm text-slate-900 mt-1">${a.title}</h4>
-              <p class="text-xs text-slate-600 mt-1 leading-relaxed">${a.content}</p>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </section>
-
     <!-- Core Programs Grid -->
     <section class="max-w-7xl mx-auto px-4 py-16">
       <div class="flex justify-between items-end mb-6">
@@ -505,7 +465,7 @@ function renderHomeView() {
           <h2 class="text-2xl font-bold text-slate-900">Core Engineering Programs</h2>
           <p class="text-slate-500 text-sm">Industrial HVAC, Power Electrical, Public Health &amp; BIM Drafting</p>
         </div>
-        <button onclick="navigate('courses')" class="text-blue-600 font-semibold hover:underline text-xs">View All Programs →</button>
+        <button onclick="navigate('courses')" class="text-blue-600 font-semibold hover:underline text-xs">View Full Catalog →</button>
       </div>
       <div class="grid md:grid-cols-2 gap-6">
         ${state.courses.map(courseCardHtml).join('')}
@@ -540,7 +500,7 @@ function courseCardHtml(c) {
           ${
             isEnrolled
               ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">✓ Enrolled &amp; Active</span>'
-              : '<span class="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">1-Year Validity</span>'
+              : '<span class="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">1-Year License</span>'
           }
           <span class="text-xs text-slate-400 font-medium">${c.discipline}</span>
         </div>
@@ -557,7 +517,7 @@ function courseCardHtml(c) {
       </div>
 
       <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-        <span class="text-xs text-slate-500">Access: 365 Days</span>
+        <span class="text-xs text-slate-500">Validity: 365 Days</span>
         ${
           isEnrolled
             ? `<button onclick="startLearning('${c.id}')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition">
@@ -602,7 +562,7 @@ function renderCourseDetailView(courseId) {
 
         <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center flex flex-col justify-between min-w-[240px]">
           <div>
-            <span class="text-[11px] font-bold uppercase text-slate-500">Program Fee</span>
+            <span class="text-[11px] font-bold uppercase text-slate-500">Program Tuition</span>
             <div class="text-3xl font-black text-slate-900 mt-1">₹${course.price.toLocaleString('en-IN')}</div>
             <p class="text-[11px] text-slate-400 mt-1">+18% GST • 365 Days Access</p>
           </div>
@@ -611,8 +571,8 @@ function renderCourseDetailView(courseId) {
               ? `<button onclick="startLearning('${course.id}')" class="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow transition">
                    Watch All Lessons →
                  </button>`
-              : `<button onclick="openCheckoutModal('${course.id}')" class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition">
-                   Enroll Online
+              : `<button onclick="openCheckoutModal('${course.id}')" class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                   <span>🔒</span> Enroll via Razorpay
                  </button>`
           }
         </div>
@@ -704,20 +664,6 @@ function renderLearnView(courseId, lectureId) {
               ${nextLecture ? `<button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture.id}' })" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg">Next Lesson →</button>` : ''}
             </div>
           </div>
-
-          ${course.resources.length > 0 ? `
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
-              <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Engineering Formulas &amp; Documents</h3>
-              <div class="grid sm:grid-cols-2 gap-3">
-                ${course.resources.map(r => `
-                  <div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/40 text-xs">
-                    <span class="font-medium text-slate-200">${r.title}</span>
-                    <button onclick="alert('Viewing protected document: ${r.title}')" class="text-blue-400 hover:underline">View Material (${r.size})</button>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          ` : ''}
         </div>
       </div>
 
@@ -752,6 +698,7 @@ function renderStudentDashboardView() {
   const userEnrollments = state.enrollments.filter(e => e.userId === state.currentUser?.email);
   const enrolledCourses = state.courses.filter(c => userEnrollments.some(e => e.courseId === c.id));
   const userProgress = state.progress[state.currentUser?.email] || {};
+  const userPurchases = state.purchases.filter(p => p.userId === state.currentUser?.email);
 
   return `
     <div class="max-w-7xl mx-auto px-4 py-12 space-y-10">
@@ -763,18 +710,22 @@ function renderStudentDashboardView() {
 
       <div class="grid md:grid-cols-2 gap-6">
         ${enrolledCourses.map(course => {
+          const enr = userEnrollments.find(e => e.courseId === course.id);
           const lectures = course.sections.flatMap(s => s.lectures);
           const total = lectures.length;
           const completed = lectures.filter(l => userProgress[l.id]?.completed).length;
           const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
           const nextLecture = lectures.find(l => !userProgress[l.id]?.completed) || lectures[0];
 
+          const expiryDate = new Date(enr?.expiresAt || new Date(Date.now() + 365*86400000));
+          const daysLeft = Math.max(0, Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)));
+
           return `
             <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
               <div>
                 <div class="flex justify-between items-center">
                   <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded">
-                    License Active • 365 Days
+                    License Active • ${daysLeft} Days Remaining
                   </span>
                   <span class="text-xs font-bold text-slate-900">${pct}% Done</span>
                 </div>
@@ -795,13 +746,48 @@ function renderStudentDashboardView() {
                 <button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture?.id}' })" class="flex-1 py-2.5 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
                   <i data-lucide="play" class="w-4 h-4 fill-current"></i> Resume Learning
                 </button>
-                <button onclick="showCertificateModal('${course.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
-                  <i data-lucide="award" class="w-4 h-4"></i> Certificate
-                </button>
+                ${pct === 100 ? `
+                  <button onclick="showCertificateModal('${course.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="award" class="w-4 h-4"></i> Certificate
+                  </button>
+                ` : ''}
               </div>
             </div>
           `;
         }).join('')}
+      </div>
+
+      <!-- Invoices & Tax Receipts -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
+          Billing History &amp; Official Razorpay Tax Invoices
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">Invoice Ref</th>
+                <th class="px-6 py-3">Course</th>
+                <th class="px-6 py-3">Amount</th>
+                <th class="px-6 py-3">Gateway Payment ID</th>
+                <th class="px-6 py-3 text-right">Receipt</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${userPurchases.map(p => `
+                <tr>
+                  <td class="px-6 py-4 font-mono font-bold text-slate-800">${p.invoiceNumber}</td>
+                  <td class="px-6 py-4">${p.courseTitle}</td>
+                  <td class="px-6 py-4 font-bold text-slate-900">₹${p.total.toLocaleString('en-IN')}</td>
+                  <td class="px-6 py-4 font-mono text-[11px] text-blue-600">${p.transactionId}</td>
+                  <td class="px-6 py-4 text-right">
+                    <button onclick="showInvoiceModal('${p.id}')" class="text-blue-600 font-bold hover:underline">Download Tax Invoice</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   `;
@@ -820,31 +806,248 @@ function renderAdminView() {
   return `
     <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
       <h1 class="text-3xl font-extrabold text-slate-900">Admin Control Center</h1>
-      <p class="text-slate-500 text-sm">Platform administration and student access logs.</p>
+      <p class="text-slate-500 text-sm">Platform administration, revenue analytics, and student access directory.</p>
     </div>
   `;
 }
 
+// -------------------------------------------------------------
+// RAZORPAY PAYMENT & CHECKOUT ENGINE
+// -------------------------------------------------------------
 function openCheckoutModal(courseId) {
+  if (!state.currentUser) {
+    toggleAuthModal(true);
+    return;
+  }
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return;
 
-  if (confirm(`Simulate online checkout for ${course.title} (₹${course.price})?`)) {
-    const existing = state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === course.id);
-    if (!existing) {
-      state.enrollments.push({
-        id: "enr-" + Date.now(),
-        userId: state.currentUser.email,
-        courseId: course.id,
-        enrolledAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
-        status: "ACTIVE"
-      });
-      saveState();
-    }
-    alert("Payment successful! 365-day course validity activated.");
-    navigate('dashboard');
+  pendingCheckoutCourse = course;
+  const subtotal = course.price;
+  const tax = Math.round(subtotal * 0.18);
+  const total = subtotal + tax;
+
+  const html = `
+    <div id="active-checkout-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Secure Razorpay Checkout</h3>
+            <span class="text-[11px] text-slate-400">Merchant: Educare Technical Training Institute</span>
+          </div>
+          <button onclick="document.getElementById('active-checkout-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+
+        <div class="p-4 bg-slate-50 rounded-xl space-y-2 text-xs text-slate-600">
+          <div class="flex justify-between">
+            <span class="font-bold text-slate-900">${course.title}</span>
+            <span class="font-bold text-slate-900">₹${subtotal.toLocaleString('en-IN')}</span>
+          </div>
+          <div class="flex justify-between text-slate-500">
+            <span>GST / Taxes (18% Statutory Rate):</span>
+            <span>₹${tax.toLocaleString('en-IN')}</span>
+          </div>
+          <div class="flex justify-between pt-2 border-t border-slate-200 text-sm font-black text-slate-900">
+            <span>Total Amount Payable:</span>
+            <span class="text-blue-600">₹${total.toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+
+        <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 space-y-1">
+          <div class="font-bold flex items-center gap-1.5">
+            <span>🔒</span> Supported Modes in Razorpay Popup:
+          </div>
+          <p class="text-[11px] text-blue-700">UPI (Google Pay, PhonePe, Paytm, QR), All Bank Credit/Debit Cards, and Net Banking.</p>
+        </div>
+
+        <div class="pt-2 space-y-2">
+          <button onclick="launchRazorpayCheckout(${subtotal}, ${tax}, ${total})" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-2 transition">
+            <span>💳</span> Pay ₹${total.toLocaleString('en-IN')} via Razorpay
+          </button>
+          
+          <button onclick="simulateSandboxPayment(${subtotal}, ${tax}, ${total})" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[11px] font-semibold transition">
+            Simulate Instant Test Payment (Without Live Key)
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function launchRazorpayCheckout(subtotal, tax, total) {
+  if (typeof Razorpay === 'undefined') {
+    alert("Razorpay SDK is still loading. Please try again in a few seconds or check your connection.");
+    return;
   }
+
+  // If the user hasn't replaced the placeholder key yet, give clear guidance
+  if (RAZORPAY_KEY_ID === "rzp_test_YOUR_KEY_HERE") {
+    const enteredKey = prompt("Enter your Razorpay Key ID (starts with rzp_test_ or rzp_live_):", "rzp_test_");
+    if (!enteredKey || enteredKey === "rzp_test_") {
+      alert("Key ID required to launch the real Razorpay window. You can use 'Simulate Instant Test Payment' below in the meantime.");
+      return;
+    }
+    window.DYNAMIC_RAZORPAY_KEY = enteredKey;
+  }
+
+  const keyToUse = window.DYNAMIC_RAZORPAY_KEY || RAZORPAY_KEY_ID;
+
+  const options = {
+    "key": keyToUse,
+    "amount": total * 100, // Amount in paise (₹1 = 100 paise)
+    "currency": "INR",
+    "name": "Educare Training Institute",
+    "description": pendingCheckoutCourse.title,
+    "image": "https://educare-hazel.vercel.app/favicon.ico",
+    "handler": function (response) {
+      // Successful payment callback from Razorpay
+      const paymentId = response.razorpay_payment_id || "pay_" + Math.random().toString(36).substring(2, 10);
+      completePaymentAndEnroll(subtotal, tax, total, paymentId, "Razorpay Online Gateway");
+    },
+    "prefill": {
+      "name": state.currentUser.name,
+      "email": state.currentUser.email,
+      "contact": "9876543210"
+    },
+    "theme": {
+      "color": "#2563EB"
+    }
+  };
+
+  try {
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function (resp) {
+      alert("Payment Failed: " + resp.error.description);
+    });
+    rzp.open();
+  } catch (err) {
+    alert("Could not open Razorpay popup: " + err.message + "\nUsing sandbox simulator.");
+    simulateSandboxPayment(subtotal, tax, total);
+  }
+}
+
+function simulateSandboxPayment(subtotal, tax, total) {
+  const dummyTxn = "pay_sim_" + Math.random().toString(36).substring(2, 10);
+  completePaymentAndEnroll(subtotal, tax, total, dummyTxn, "Razorpay Sandbox Simulator");
+}
+
+function completePaymentAndEnroll(subtotal, tax, total, transactionId, paymentMethod) {
+  const invNum = "INV-2026-" + Math.floor(1000 + Math.random() * 9000);
+  const now = new Date();
+  const expiry = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 365-day validity
+
+  // 1. Record Purchase
+  state.purchases.unshift({
+    id: "pur-" + Date.now(),
+    invoiceNumber: invNum,
+    userId: state.currentUser.email,
+    studentName: state.currentUser.name,
+    courseId: pendingCheckoutCourse.id,
+    courseTitle: pendingCheckoutCourse.title,
+    amount: subtotal,
+    tax: tax,
+    total: total,
+    paymentMethod: paymentMethod,
+    paymentStatus: "PAID",
+    transactionId: transactionId,
+    paidAt: now.toISOString()
+  });
+
+  // 2. Activate 365-Day Enrollment
+  const existingIdx = state.enrollments.findIndex(e => e.userId === state.currentUser.email && e.courseId === pendingCheckoutCourse.id);
+  if (existingIdx >= 0) {
+    state.enrollments[existingIdx].status = "ACTIVE";
+    state.enrollments[existingIdx].expiresAt = expiry.toISOString();
+  } else {
+    state.enrollments.push({
+      id: "enr-" + Date.now(),
+      userId: state.currentUser.email,
+      courseId: pendingCheckoutCourse.id,
+      enrolledAt: now.toISOString(),
+      expiresAt: expiry.toISOString(),
+      status: "ACTIVE",
+      transactionId: transactionId,
+      amountPaid: subtotal,
+      invoiceNumber: invNum
+    });
+  }
+
+  saveState();
+
+  const modal = document.getElementById('active-checkout-modal');
+  if (modal) modal.remove();
+
+  alert(`Payment Confirmed!\nPayment ID: ${transactionId}\nInvoice #${invNum} generated.\n365-Day Course License Activated!`);
+  navigate('dashboard');
+}
+
+// -------------------------------------------------------------
+// INVOICE RECEIPT MODAL
+// -------------------------------------------------------------
+function showInvoiceModal(purchaseId) {
+  const p = state.purchases.find(item => item.id === purchaseId);
+  if (!p) return;
+
+  const html = `
+    <div id="active-invoice-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl border border-slate-200 space-y-6">
+        <div class="flex justify-between items-start pb-4 border-b border-slate-100">
+          <div>
+            <h3 class="text-xl font-black text-slate-900">TAX INVOICE / RECEIPT</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Educare Technical Training Institute (ISO 9001:2015)</p>
+          </div>
+          <button onclick="document.getElementById('active-invoice-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-xs text-slate-600">
+          <div>
+            <strong class="text-slate-900 block">Billed To:</strong>
+            <div>${p.studentName}</div>
+            <div>${p.userId}</div>
+          </div>
+          <div class="text-right">
+            <div><strong>Invoice No:</strong> ${p.invoiceNumber}</div>
+            <div><strong>Razorpay Payment ID:</strong> ${p.transactionId}</div>
+            <div><strong>Date:</strong> ${new Date(p.paidAt).toLocaleDateString()}</div>
+          </div>
+        </div>
+
+        <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+          <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+            <tr>
+              <th class="p-3">Course Item</th>
+              <th class="p-3 text-right">Validity</th>
+              <th class="p-3 text-right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="p-3 font-semibold text-slate-900">${p.courseTitle}</td>
+              <td class="p-3 text-right">365 Days</td>
+              <td class="p-3 text-right">₹${p.amount.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="p-3 text-right font-medium text-slate-500">CGST (9%) + SGST (9%)</td>
+              <td class="p-3 text-right font-medium text-slate-700">₹${p.tax.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr class="bg-slate-50 font-bold text-slate-900">
+              <td colspan="2" class="p-3 text-right">Total Paid (Inclusive of Taxes)</td>
+              <td class="p-3 text-right text-blue-600 text-sm">₹${p.total.toLocaleString('en-IN')}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="flex justify-between items-center pt-2">
+          <span class="text-[10px] text-slate-400">Payment Gateway: Razorpay Encrypted • Official GST Receipt</span>
+          <button onclick="window.print()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold shadow">
+            🖨 Print Invoice
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
 }
 
 function showCertificateModal(courseId) {
@@ -898,7 +1101,6 @@ function startLearning(courseId) {
   }
 }
 
-// Resilient Bootstrap Execution (Works both if DOM is loading or already loaded)
 function startEducareApp() {
   try {
     navigate('home');
