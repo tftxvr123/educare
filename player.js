@@ -1,4 +1,4 @@
-// player.js — Video Controller, Resume Sync & Local File Loader
+// player.js — Anti-Download Video Engine, Resume Sync & Local Testing
 
 let progressTimer = null;
 let localBlobUrl = null;
@@ -21,6 +21,13 @@ function initVideoPlayer(lectureId, resumeSeconds) {
   const statusText = document.getElementById("progress-status");
   if (!player) return;
 
+  // Prevent right-click context menu to stop direct download
+  player.oncontextmenu = (e) => {
+    e.preventDefault();
+    return false;
+  };
+
+  // Restore playback position on load
   player.onloadedmetadata = () => {
     if (resumeSeconds > 2) {
       player.currentTime = resumeSeconds;
@@ -29,7 +36,7 @@ function initVideoPlayer(lectureId, resumeSeconds) {
         const s = Math.floor(resumeSeconds % 60);
         timeStr.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
         toast.classList.remove("hidden");
-        setTimeout(() => toast.classList.add("hidden"), 3000);
+        setTimeout(() => toast.classList.add("hidden"), 3200);
       }
     }
   };
@@ -48,7 +55,8 @@ function initVideoPlayer(lectureId, resumeSeconds) {
 
     state.progress[state.currentUser.email][lectureId] = {
       seconds: Math.floor(cur),
-      completed: isCompleted || wasCompleted
+      completed: isCompleted || wasCompleted,
+      updatedAt: new Date().toISOString()
     };
     saveState();
 
