@@ -1,91 +1,95 @@
-// policies-data.js — Public Institution Info, Legal Policies & Contact Data
+// policies-data.js — Institute Profile, Business Contacts & Legal Policies
 
 const POLICIES_DATA = {
   institution: {
     name: "Educare Technical Training Institute",
-    tagline: "Premier Vocational & Engineering Skills Academy",
-    about: "Educare is a specialized technical training institution dedicated to bridging the gap between academic theory and practical engineering execution. We provide structured, industry-aligned training programs in core engineering disciplines and cutting-edge design software. Our courses are developed by practicing industry professionals to equip students and working engineers with job-ready competencies.",
+    tagline: "Premier Vocational & Industrial Engineering Academy",
+    about: "Educare is an ISO 9001:2015 accredited technical training academy delivering hands-on engineering programs in Mechanical HVAC, Electrical Systems, Plumbing (PHE), and AutoCAD/Revit BIM Modeling. Our programs are designed and delivered by practicing senior MEP consultants to produce job-ready engineers.",
+    regNumber: "EDU-IND-2026-8842",
     stats: [
-      { label: "Core Engineering Streams", value: "4 Disciplines" },
-      { label: "Practical Focus", value: "100% Industry Aligned" },
-      { label: "Access Mode", value: "Self-Paced & Structured" },
-      { label: "Platform Model", value: "Student-Login Enabled" }
+      { label: "Engineering Disciplines", value: "4 Core Programs" },
+      { label: "Accreditation", value: "ISO 9001:2015" },
+      { label: "Course Validity", value: "365 Days (1 Year)" },
+      { label: "Learning Mode", value: "Recorded + Live Classes" }
     ]
   },
   contact: {
-    email: "admissions@educare.local",
-    supportEmail: "support@educare.local",
-    phone: "+91 98765 43210",
-    hours: "Monday – Saturday: 9:00 AM – 6:00 PM IST",
-    address: "Educare Learning Complex, Knowledge Corridor, Tech Park Road, Bengaluru, Karnataka, India"
+    admissionsEmail: "admissions@educare.org.in",
+    supportEmail: "support@educare.org.in",
+    adminEmail: "admin@educare.org.in",
+    instructorEmail: "instructor@educare.org.in",
+    phone: "+91 80 4567 8900",
+    whatsapp: "+91 98765 43210",
+    hours: "Monday – Saturday: 9:00 AM – 6:30 PM IST",
+    address: "Educare Campus, 4th Floor, Tech Hub Tower, Outer Ring Road, Bengaluru, Karnataka 560103, India"
   },
   announcements: [
     {
       id: "ann-1",
-      title: "New Batch Curriculum Released for MEP Disciplines",
-      date: "Current Session",
-      badge: "Curriculum",
-      content: "Updated modules for Mechanical HVAC, Electrical Wiring, and Plumbing have been published with revised standard calculation guidelines."
+      title: "Batch 2026 Admissions & Live Interactive Sessions Announced",
+      date: "Active Session",
+      badge: "Admissions",
+      content: "All enrolled students in Mechanical, Electrical, Plumbing, and AutoCAD & Revit are invited to the upcoming weekend live interactive session on MEP Coordination."
     },
     {
       id: "ann-2",
-      title: "AutoCAD & Revit BIM Lab Modules Online",
-      date: "Announcement",
-      badge: "Design Suite",
-      content: "Complete 2D drafting and 3D architectural BIM coordination lessons are now accessible for enrolled engineering students."
+      title: "Course Validity Policy: 1-Year Unrestricted Access",
+      date: "Policy Update",
+      badge: "Notice",
+      content: "All course enrollments remain active for exactly 365 days from the date of payment confirmation, including video lectures, reference PDFs, and live class archives."
     }
   ],
   privacyPolicy: {
-    title: "Privacy Policy",
-    lastUpdated: "Version 1.0 (Phase 1 MVP)",
+    title: "Privacy Policy & Data Security",
+    lastUpdated: "September 2026 — Production Standard",
     sections: [
       {
-        heading: "1. Information We Collect",
-        body: "We collect basic student account information including name, email address, course enrollments, lecture progress timestamps, and assessment scores. We do not collect payment card information or sensitive financial details on this platform."
+        heading: "1. Data Collection & Student Profiles",
+        body: "Educare collects student identity data (name, email address, phone number), authentication metadata, device session tokens, and lecture watch records. Video progress and quiz scores are retained to maintain course compliance."
       },
       {
-        heading: "2. How Information is Used",
-        body: "Your information is used strictly to provide educational services: recording lecture completion, preserving video resume positions, evaluating quizzes, and managing student course access."
+        heading: "2. Single Device & Session Enforcement",
+        body: "To protect proprietary course materials and intellectual property, Educare strictly enforces one active session per student. When a new login occurs, any previously active session on another device or browser is terminated automatically."
       },
       {
-        heading: "3. Data Protection & Cookies",
-        body: "We use browser local storage and secure session identifiers solely for maintaining login states and playback progress. We do not sell, rent, or trade student data to third-party advertisers."
+        heading: "3. Payment Information Security",
+        body: "All online payments are processed through PCI-DSS Level 1 certified gateways (Razorpay / Stripe). Educare never stores full debit/credit card numbers or CVVs on its servers."
       }
     ]
   },
   termsConditions: {
-    title: "Terms & Conditions",
-    lastUpdated: "Version 1.0 (Phase 1 MVP)",
+    title: "Terms & Conditions of Service",
+    lastUpdated: "September 2026 — Production Standard",
     sections: [
       {
-        heading: "1. Platform Usage & Account Responsibility",
-        body: "Educare provides technical courses for authorized student use. Users must provide accurate profile details and maintain the confidentiality of their login credentials."
+        heading: "1. 1-Year Course Access License",
+        body: "Enrollment grants a personal, non-transferable, single-user license to access the course content for exactly 365 calendar days from the date of payment verification."
       },
       {
-        heading: "2. Intellectual Property Rights",
-        body: "All curriculum structures, video lessons, downloadable reference PDFs, and quiz assessments are the intellectual property of Educare and its faculty. Content may not be copied, redistributed, or broadcast without express permission."
+        heading: "2. Anti-Piracy & DRM Protection",
+        body: "Course videos, live stream sessions, and engineering guides are watermarked and protected. Downloading, screen-recording, or sharing login credentials is a breach of copyright and results in immediate account revocation without refund."
       },
       {
-        heading: "3. Access Restrictions",
-        body: "Unenrolled visitors may browse the public catalog, syllabus structures, and public announcements. Full video lessons and study materials require student login and course enrollment."
+        heading: "3. Completion Certificate Eligibility",
+        body: "Certificates of Course Completion are generated only when the student successfully watches 100% of the course lectures and passes the associated module assessments with a minimum score of 70%."
       }
     ]
   },
   refundPolicy: {
     title: "Refund & Cancellation Policy",
-    lastUpdated: "Version 1.0 (Phase 1 MVP)",
+    lastUpdated: "September 2026 — Production Standard",
     sections: [
       {
-        heading: "1. Current Access Status",
-        body: "During this initial deployment phase, course access is granted through student registration and enrollment without mandatory upfront billing. Course fees may be enabled in future phases."
+        heading: "1. 7-Day Refund Guarantee",
+        body: "Students may request a cancellation and full refund within 7 calendar days of course enrollment, provided they have watched less than 20% of the total course video lectures and have not generated a course certificate."
       },
       {
-        heading: "2. Future Paid Enrollments",
-        body: "When fee payment structures are activated, students will be eligible for a full cancellation and refund within 7 calendar days of enrollment provided less than 25% of the course lectures have been completed."
+        heading: "2. Cancellation Procedure",
+        body: "Refund requests must be initiated directly from the Invoices & Billing section of the Student Dashboard or by emailing support@educare.org.in with the Invoice Reference ID."
       },
       {
-        heading: "3. Dispute & Support Inquiries",
-        body: "For all enrollment cancellation or access requests, students can reach the support desk at support@educare.local."
+        heading: "3. Settlement Timeline",
+        body: "Approved refunds are credited back to the original payment source (UPI, Credit Card, Debit Card, Net Banking) within 5 to 7 business days."
       }
     ]
   }
