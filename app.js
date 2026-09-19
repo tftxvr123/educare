@@ -1,7 +1,7 @@
 
 
 
-// app.js — Educare Production Core LMS Controller (Staff Master Access & Student Directory)
+// app.js — Educare Production Core LMS Controller (Hybrid YouTube + MP4 Player)
 
 // =============================================================
 // AUTHENTICATION & GATEWAY CONFIGURATION
@@ -12,6 +12,14 @@ const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.goo
 
 // Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
+
+// Helper: Detect and convert any YouTube URL into an embed link
+function getYouTubeEmbedUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
+  const match = url.match(regExp);
+  return (match && match[1]) ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&rel=0&modestbranding=1` : null;
+}
 
 // =============================================================
 // 4 CORE ENGINEERING LAUNCH COURSES (PRESERVED)
@@ -134,7 +142,7 @@ const FALLBACK_POLICIES = {
       { label: "Engineering Disciplines", value: "4 Core Programs" },
       { label: "Accreditation", value: "ISO 9001:2015" },
       { label: "Course Validity", value: "365 Days (1 Year)" },
-      { label: "Payment Gateway", value: "Razorpay Encrypted" }
+      { label: "Video Hosting", value: "YouTube Unlisted + MP4" }
     ]
   },
   contact: {
@@ -197,7 +205,7 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v10");
+    const stored = localStorage.getItem("educare_prod_v11");
     let parsedState = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_STATE));
 
     if (!parsedState.courses || parsedState.courses.length === 0) {
@@ -233,7 +241,7 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v10", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v11", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
@@ -241,7 +249,7 @@ function saveState() {
 
 function resetDemoState() {
   if (confirm("Reset local storage to production defaults?")) {
-    localStorage.removeItem("educare_prod_v10");
+    localStorage.removeItem("educare_prod_v11");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -340,7 +348,7 @@ function handleGoogleAuth() {
           }
         },
         error_callback: (err) => {
-          alert("Google Sign-In Notice: " + (err.message || "Check Authorized Origins in Google Cloud"));
+          alert("Google Sign-In Notice: " + (err.message || "Ensure Authorized Origins are set in Google Cloud"));
         }
       });
       tokenClient.requestAccessToken({ prompt: 'consent' });
@@ -609,9 +617,6 @@ function renderCoursesView() {
   `;
 }
 
-// -------------------------------------------------------------
-// COURSE CARD (Bypasses payment check for Admin / Super Admin)
-// -------------------------------------------------------------
 function courseCardHtml(c) {
   const isStaff = state.currentUser && ['SUPER_ADMIN', 'ADMIN', 'INSTRUCTOR'].includes(state.currentUser.role);
   const enrollment = state.currentUser ? state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === c.id) : null;
@@ -659,9 +664,6 @@ function courseCardHtml(c) {
   `;
 }
 
-// -------------------------------------------------------------
-// COURSE DETAIL VIEW (Staff Bypasses Payment Completely)
-// -------------------------------------------------------------
 function renderCourseDetailView(courseId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
@@ -677,7 +679,7 @@ function renderCourseDetailView(courseId) {
         <div class="space-y-4 max-w-2xl">
           ${
             isStaff
-              ? `<div class="inline-block text-xs font-bold bg-purple-100 text-purple-800 px-3 py-1 rounded-full">✓ ${state.currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'} Master Privilege (No Enrollment Needed)</div>`
+              ? `<div class="inline-block text-xs font-bold bg-purple-100 text-purple-800 px-3 py-1 rounded-full">✓ ${state.currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'} Master Privilege</div>`
               : isEnrolled
               ? '<div class="inline-block text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">✓ License Active (365 Days)</div>'
               : '<div class="inline-block text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">Accredited Program</div>'
@@ -731,7 +733,7 @@ function renderCourseDetailView(courseId) {
         </div>
       </div>
 
-      <!-- Curriculum Structure (Unlocked for Staff) -->
+      <!-- Curriculum Structure -->
       <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
         <h2 class="text-xl font-bold text-slate-900">Curriculum Structure</h2>
         <div class="space-y-4">
@@ -763,6 +765,9 @@ function renderCourseDetailView(courseId) {
   `;
 }
 
+// -------------------------------------------------------------
+// HYBRID VIDEO PLAYER (YOUTUBE EMBED + MP4 NATIVE)
+// -------------------------------------------------------------
 function renderLearnView(courseId, lectureId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
@@ -792,12 +797,15 @@ function renderLearnView(courseId, lectureId) {
     savedSeconds = state.progress[state.currentUser.email][activeLecture.id].seconds || 0;
   }
 
+  const isCurrentLectureDone = state.currentUser && state.progress[state.currentUser.email]?.[activeLecture.id]?.completed;
+  const ytEmbedUrl = getYouTubeEmbedUrl(activeLecture.videoUrl);
+
   const currentIndex = allLectures.findIndex(l => l.id === activeLecture.id);
   const prevLecture = allLectures[currentIndex - 1];
   const nextLecture = allLectures[currentIndex + 1];
 
   setTimeout(() => {
-    if (typeof initVideoPlayer === 'function') {
+    if (!ytEmbedUrl && typeof initVideoPlayer === 'function') {
       initVideoPlayer(activeLecture.id, savedSeconds);
     }
   }, 80);
@@ -806,28 +814,56 @@ function renderLearnView(courseId, lectureId) {
     <div class="bg-slate-950 text-slate-100 min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
       <div class="flex-1 p-4 lg:p-8 overflow-y-auto">
         <div class="max-w-4xl mx-auto space-y-6">
+          
+          <!-- HYBRID PLAYER SCREEN (YouTube or Native MP4) -->
           <div class="relative bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl aspect-video select-none">
-            <video
-              id="live-player"
-              src="${activeLecture.videoUrl}"
-              controls
-              controlsList="nodownload"
-              playsinline
-              preload="auto"
-              class="w-full h-full object-contain"
-            ></video>
-            <div id="resume-toast" class="absolute top-4 left-4 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow hidden">
-              Resumed at <span id="resume-time-str">00:00</span>
-            </div>
+            ${
+              ytEmbedUrl
+                ? `<iframe
+                     id="live-player-yt"
+                     src="${ytEmbedUrl}"
+                     title="${activeLecture.title}"
+                     class="w-full h-full border-0"
+                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                     allowfullscreen
+                   ></iframe>`
+                : `<video
+                     id="live-player"
+                     src="${activeLecture.videoUrl}"
+                     controls
+                     controlsList="nodownload"
+                     playsinline
+                     preload="auto"
+                     class="w-full h-full object-contain"
+                   ></video>
+                   <div id="resume-toast" class="absolute top-4 left-4 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow hidden">
+                     Resumed at <span id="resume-time-str">00:00</span>
+                   </div>`
+            }
           </div>
 
+          <!-- Lecture Header & Navigation -->
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
             <div>
               <div class="text-xs text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1">
                 <span>✓ ${isStaff ? 'Staff Privilege Access' : 'Active License'}:</span> ${course.title}
               </div>
               <h1 class="text-2xl font-bold text-white mt-1">${activeLecture.title}</h1>
-              <p class="text-xs text-slate-400 mt-1" id="progress-status">Tracking progress automatically...</p>
+              <div class="flex items-center gap-3 mt-1.5">
+                <span class="text-xs text-slate-400" id="progress-status">
+                  ${isCurrentLectureDone ? '✓ Lesson Completed' : (ytEmbedUrl ? 'YouTube Stream' : 'Tracking progress automatically...')}
+                </span>
+                ${
+                  state.currentUser && state.currentUser.role === 'STUDENT'
+                    ? `<button onclick="toggleLectureCompletion('${course.id}', '${activeLecture.id}')" class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                        isCurrentLectureDone ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        ${isCurrentLectureDone ? 'Completed' : 'Mark Lesson Completed'}
+                      </button>`
+                    : ''
+                }
+              </div>
             </div>
             <div class="flex items-center space-x-2">
               ${prevLecture ? `<button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${prevLecture.id}' })" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg">← Previous</button>` : ''}
@@ -837,6 +873,7 @@ function renderLearnView(courseId, lectureId) {
         </div>
       </div>
 
+      <!-- Syllabus Sidebar -->
       <div class="w-full lg:w-80 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 p-4 overflow-y-auto">
         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Course Syllabus</h2>
         <div class="space-y-4">
@@ -862,6 +899,18 @@ function renderLearnView(courseId, lectureId) {
       </div>
     </div>
   `;
+}
+
+function toggleLectureCompletion(courseId, lectureId) {
+  if (!state.currentUser) return;
+  if (!state.progress[state.currentUser.email]) {
+    state.progress[state.currentUser.email] = {};
+  }
+  const current = state.progress[state.currentUser.email][lectureId] || { seconds: 0, completed: false };
+  current.completed = !current.completed;
+  state.progress[state.currentUser.email][lectureId] = current;
+  saveState();
+  navigate('learn', { courseId, lectureId });
 }
 
 function renderStudentDashboardView() {
@@ -914,6 +963,9 @@ function renderStudentDashboardView() {
   `;
 }
 
+// -------------------------------------------------------------
+// INSTRUCTOR STUDIO (educaresir99@gmail.com PORTAL)
+// -------------------------------------------------------------
 function renderInstructorDashboardView() {
   if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
     return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied: Instructor portal only.</div>`;
@@ -1048,12 +1100,8 @@ function renderAdminView() {
 
                 return `
                   <tr>
-                    <td class="px-6 py-4 font-bold text-slate-900 text-sm">
-                      ${s.name}
-                    </td>
-                    <td class="px-6 py-4 font-mono text-blue-600 font-medium">
-                      ${s.email}
-                    </td>
+                    <td class="px-6 py-4 font-bold text-slate-900 text-sm">${s.name}</td>
+                    <td class="px-6 py-4 font-mono text-blue-600 font-medium">${s.email}</td>
                     <td class="px-6 py-4">
                       ${courseNames.length > 0
                         ? courseNames.map(name => `<span class="inline-block bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded mr-1 mb-1">✓ ${name}</span>`).join('')
@@ -1078,7 +1126,7 @@ function renderAdminView() {
         </div>
       </div>
 
-      <!-- 2. UNIVERSAL COURSE MANAGEMENT (ADMIN CAN UPLOAD TO ALL COURSES) -->
+      <!-- 2. UNIVERSAL COURSE MANAGEMENT -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
           <span>All Courses — Upload Lectures &amp; Manage Modules</span>
@@ -1102,57 +1150,6 @@ function renderAdminView() {
                   <td class="px-6 py-4 text-right space-x-3">
                     <button onclick="promptAddSection('${c.id}')" class="text-blue-600 font-bold hover:underline">+ Module</button>
                     <button onclick="promptAddLecture('${c.id}')" class="text-emerald-600 font-bold hover:underline">📹 + Video Lecture</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 3. PLATFORM USERS & ROLES TABLE -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
-          <span>System Users &amp; Role Permissions</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
-              <tr>
-                <th class="px-6 py-3">User</th>
-                <th class="px-6 py-3">Assigned Role</th>
-                <th class="px-6 py-3">Status</th>
-                <th class="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${state.users.map(u => `
-                <tr>
-                  <td class="px-6 py-4">
-                    <strong class="text-slate-900 block">${u.name}</strong>
-                    <span class="text-slate-400 text-[11px]">${u.email}</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    ${isSuper && u.email !== state.currentUser.email ? `
-                      <select onchange="changeUserRole('${u.id}', this.value)" class="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-700">
-                        <option value="STUDENT" ${u.role === 'STUDENT' ? 'selected' : ''}>STUDENT</option>
-                        <option value="INSTRUCTOR" ${u.role === 'INSTRUCTOR' ? 'selected' : ''}>INSTRUCTOR</option>
-                        <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
-                        <option value="SUPER_ADMIN" ${u.role === 'SUPER_ADMIN' ? 'selected' : ''}>SUPER_ADMIN</option>
-                      </select>
-                    ` : `
-                      <span class="font-bold text-blue-600 uppercase text-[11px]">${u.role}</span>
-                    `}
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-                      ${u.active ? 'Active' : 'Locked'}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 text-right space-x-2">
-                    ${u.email !== state.currentUser.email ? `
-                      <button onclick="toggleUserStatus('${u.id}')" class="text-blue-600 font-bold hover:underline">${u.active ? 'Lock' : 'Unlock'}</button>
-                    ` : '<span class="text-slate-400 text-[10px]">Current Session</span>'}
                   </td>
                 </tr>
               `).join('')}
@@ -1186,12 +1183,12 @@ function promptAddLecture(courseId) {
   }
   const title = prompt("Enter Lecture / Video Title:");
   if (!title) return;
-  const videoUrl = prompt("Enter MP4 Video URL (or leave blank for standard test stream):") || "https://vjs.zencdn.net/v/oceans.mp4";
-  const duration = parseInt(prompt("Enter duration in seconds:", "46")) || 46;
+  const videoUrl = prompt("Enter Video Link (YouTube Unlisted link OR direct MP4 link):") || "https://vjs.zencdn.net/v/oceans.mp4";
+  const duration = parseInt(prompt("Enter duration in seconds (e.g., 60):", "60")) || 60;
 
   course.sections[0].lectures.push({ id: "l-" + Date.now(), title, duration, videoUrl });
   saveState();
-  alert(`Video Lecture "${title}" successfully uploaded to ${course.title}!`);
+  alert(`Video Lecture "${title}" successfully uploaded and added to ${course.title}!`);
   navigate(currentRoute);
 }
 
