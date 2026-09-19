@@ -12,10 +12,10 @@ const INITIAL_COURSES = [
     slug: "mechanical-engineering",
     title: "Mechanical: Industrial HVAC & Thermal Design",
     discipline: "HVAC, Thermodynamics & MEP",
-    price: 6499, // Dynamic configurable price in INR
+    price: 6499,
     validityDays: 365,
-    instructorId: "instructor@educare.local",
-    instructorName: "Er. Rajesh Sharma (Senior MEP Consultant)",
+    instructorId: "educaresir99@gmail.com",
+    instructorName: "Educare Faculty (educaresir99@gmail.com)",
     shortDescription: "Complete industrial HVAC design, ventilation principles, duct sizing, and equipment selection.",
     description: "An industry-accredited training program covering thermodynamics fundamentals, psychrometric analysis, building heat load calculations using E20/ASHRAE standards, equal-friction duct sizing, chilled water pump head calculations, and AHU air-side design.",
     sections: [
@@ -70,8 +70,8 @@ const INITIAL_COURSES = [
     discipline: "Power Distribution & Control Panels",
     price: 5999,
     validityDays: 365,
-    instructorId: "instructor@educare.local",
-    instructorName: "Er. Priya Nair (Chief Electrical Specialist)",
+    instructorId: "educaresir99@gmail.com",
+    instructorName: "Educare Faculty (educaresir99@gmail.com)",
     shortDescription: "Industrial wiring, Single-Line Diagrams (SLD), panel board design, and transformer sizing.",
     description: "Master modern power engineering: connected load vs. maximum demand calculations, busbar trunking systems, voltage drop analysis, circuit breakers (MCB, MCCB, ACB), lightning protection, and backup diesel generator sizing.",
     sections: [
@@ -96,21 +96,7 @@ const INITIAL_COURSES = [
     resources: [
       { id: "r-e-1", title: "IEC_Standard_Cable_Capacity_Guide.pdf", size: "2.8 MB" }
     ],
-    quizzes: [
-      {
-        id: "q-e-1",
-        title: "Industrial Electrical Sizing Assessment",
-        passingScore: 70,
-        questions: [
-          {
-            id: "qq-e-1",
-            questionText: "The diversity factor is always:",
-            options: ["Equal to 1.0", "Greater than or equal to 1.0", "Less than 1.0", "Negative"],
-            correctAnswerIndex: 1
-          }
-        ]
-      }
-    ]
+    quizzes: []
   },
   {
     id: "c-plumbing",
@@ -119,10 +105,10 @@ const INITIAL_COURSES = [
     discipline: "Water Treatment, Drainage & Firefighting",
     price: 4999,
     validityDays: 365,
-    instructorId: "instructor@educare.local",
-    instructorName: "Er. K. V. Raman (PHE Lead Consultant)",
+    instructorId: "educaresir99@gmail.com",
+    instructorName: "Educare Faculty (educaresir99@gmail.com)",
     shortDescription: "Water supply networks, drainage systems, hydro-pneumatic pumping, and firefighting hydraulics.",
-    description: "Covers water storage tank sizing, booster pumping systems, gravity water distribution, fixture units (FU), soil and waste stack venting, storm water harvesting, and sprinkler hydraulic design according to NBC/UPC guidelines.",
+    description: "Covers water storage tank sizing, booster pumping systems, gravity water distribution, fixture units (FU), soil and waste stack venting, storm water harvesting, and sprinkler hydraulic design.",
     sections: [
       {
         id: "s-plumb-1",
@@ -132,34 +118,12 @@ const INITIAL_COURSES = [
           { id: "l-p-2", title: "2. Hydro-Pneumatic Pressure Booster Systems", duration: 5, videoUrl: RELIABLE_VIDEOS.stream2 },
           { id: "l-p-3", title: "3. Water Distribution Pipe Sizing using Fixture Units", duration: 10, videoUrl: RELIABLE_VIDEOS.stream3 }
         ]
-      },
-      {
-        id: "s-plumb-2",
-        title: "Module 2: Drainage Stacks & Storm Water Drainage",
-        lectures: [
-          { id: "l-p-4", title: "4. Soil, Waste & Vent Stack Piping Configurations", duration: 46, videoUrl: RELIABLE_VIDEOS.stream1 },
-          { id: "l-p-5", title: "5. Rainwater Harvesting Tank & Gradient Calculations", duration: 5, videoUrl: RELIABLE_VIDEOS.stream2 }
-        ]
       }
     ],
     resources: [
       { id: "r-p-1", title: "UPC_Plumbing_Fixture_Unit_Chart.pdf", size: "2.1 MB" }
     ],
-    quizzes: [
-      {
-        id: "q-p-1",
-        title: "PHE Hydraulic Systems Quiz",
-        passingScore: 70,
-        questions: [
-          {
-            id: "qq-p-1",
-            questionText: "What is the primary function of a plumbing vent pipe?",
-            options: ["To drain greywater", "To protect trap seals from siphonage and back-pressure", "To inject clean air into drinking water", "To prevent pipes from cooling"],
-            correctAnswerIndex: 1
-          }
-        ]
-      }
-    ]
+    quizzes: []
   },
   {
     id: "c-autocad-revit",
@@ -168,48 +132,24 @@ const INITIAL_COURSES = [
     discipline: "BIM Architecture & MEP Drafting",
     price: 7999,
     validityDays: 365,
-    instructorId: "instructor@educare.local",
-    instructorName: "Ar. Sneha Patel (Autodesk Certified Professional)",
+    instructorId: "educaresir99@gmail.com",
+    instructorName: "Educare Faculty (educaresir99@gmail.com)",
     shortDescription: "Master 2D engineering drafting in AutoCAD and multidisciplinary 3D BIM modeling in Autodesk Revit.",
-    description: "Practical training from 2D floor plans to coordinated 3D BIM models: layer conventions, dynamic blocks, external references (XRefs), Revit parameter management, family creation, Clash Detection in Navisworks, and construction documentation.",
+    description: "Practical training from 2D floor plans to coordinated 3D BIM models: layer conventions, dynamic blocks, external references (XRefs), Revit parameter management, family creation, and MEP coordination.",
     sections: [
       {
         id: "s-bim-1",
         title: "Module 1: AutoCAD 2D Engineering Drafting",
         lectures: [
           { id: "l-b-1", title: "1. Precision Coordinate Systems, Layers & Annotation Styles", duration: 46, videoUrl: RELIABLE_VIDEOS.stream1 },
-          { id: "l-b-2", title: "2. Dynamic Attributes, Block Libraries & Viewports", duration: 5, videoUrl: RELIABLE_VIDEOS.stream2 },
-          { id: "l-b-3", title: "3. MEP Engineering Layouts & Coordinated Shop Drawings", duration: 10, videoUrl: RELIABLE_VIDEOS.stream3 }
-        ]
-      },
-      {
-        id: "s-bim-2",
-        title: "Module 2: Autodesk Revit 3D BIM & MEP Systems",
-        lectures: [
-          { id: "l-b-4", title: "4. Revit BIM Environment, Grids, Structural Framing & Levels", duration: 46, videoUrl: RELIABLE_VIDEOS.stream1 },
-          { id: "l-b-5", title: "5. MEP Duct, Conduit, and Pipe Routing in Revit 3D", duration: 5, videoUrl: RELIABLE_VIDEOS.stream2 }
+          { id: "l-b-2", title: "2. Dynamic Attributes, Block Libraries & Viewports", duration: 5, videoUrl: RELIABLE_VIDEOS.stream2 }
         ]
       }
     ],
     resources: [
-      { id: "r-b-1", title: "AutoCAD_Engineering_Standard_Shortcuts.pdf", size: "2.4 MB" },
-      { id: "r-b-2", title: "Revit_MEP_Sample_Template.png", size: "1.4 MB" }
+      { id: "r-b-1", title: "AutoCAD_Engineering_Standard_Shortcuts.pdf", size: "2.4 MB" }
     ],
-    quizzes: [
-      {
-        id: "q-b-1",
-        title: "BIM & CAD Proficiency Verification",
-        passingScore: 70,
-        questions: [
-          {
-            id: "qq-b-1",
-            questionText: "In Autodesk Revit, modifying an element in a 2D floor plan view:",
-            options: ["Only affects the 2D plan", "Updates all 3D views, sections, and schedules automatically", "Requires manual synchronization", "Deletes the associated elevation"],
-            correctAnswerIndex: 1
-          }
-        ]
-      }
-    ]
+    quizzes: []
   }
 ];
 
@@ -219,23 +159,11 @@ const INITIAL_LIVE_CLASSES = [
     courseId: "c-mechanical",
     title: "Live MEP Coordination & Chiller Plant Room Walkthrough",
     platform: "Zoom",
-    joinUrl: "https://zoom.us/j/9876543210?pwd=educaredemolive",
-    scheduledDate: "2026-09-26T15:00:00.000Z",
+    joinUrl: "https://zoom.us",
+    scheduledDate: new Date(Date.now() + 86400000 * 2).toISOString(),
     durationMinutes: 90,
-    instructorName: "Er. Rajesh Sharma",
+    instructorName: "educaresir99@gmail.com",
     isCompleted: false,
     recordingUrl: null
-  },
-  {
-    id: "live-2",
-    courseId: "c-autocad-revit",
-    title: "Navisworks Clash Detection & Clash Resolution Masterclass",
-    platform: "Google Meet",
-    joinUrl: "https://meet.google.com/abc-educare-live",
-    scheduledDate: "2026-09-20T11:00:00.000Z",
-    durationMinutes: 60,
-    instructorName: "Ar. Sneha Patel",
-    isCompleted: true,
-    recordingUrl: "https://vjs.zencdn.net/v/oceans.mp4"
   }
 ];
