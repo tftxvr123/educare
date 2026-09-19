@@ -1,9 +1,12 @@
 
-// app.js — Educare Production Core LMS Controller (Self-Healing & Complete)
+
+
+// app.js — Educare Production Core LMS Controller (Staff Master Access & Student Directory)
 
 // =============================================================
 // AUTHENTICATION & GATEWAY CONFIGURATION
 // =============================================================
+
 // Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
 const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
 
@@ -11,7 +14,7 @@ const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.goo
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
 
 // =============================================================
-// COMPLETE 4 CORE ENGINEERING LAUNCH COURSES (ALWAYS PRESERVED)
+// 4 CORE ENGINEERING LAUNCH COURSES (PRESERVED)
 // =============================================================
 const FALLBACK_COURSES = [
   {
@@ -125,7 +128,7 @@ const FALLBACK_POLICIES = {
   institution: {
     name: "Educare Technical Training Institute",
     tagline: "Premier Vocational & Industrial Engineering Academy",
-    about: "Educare is an accredited technical training academy delivering hands-on engineering programs in Mechanical HVAC, Electrical Systems, Plumbing (PHE), and AutoCAD/Revit BIM Modeling. Developed by practicing senior consultants to build job-ready competencies.",
+    about: "Educare is an accredited technical training academy delivering hands-on engineering programs in Mechanical HVAC, Electrical Systems, Plumbing (PHE), and AutoCAD/Revit BIM Modeling.",
     regNumber: "EDU-IND-2026-8842",
     stats: [
       { label: "Engineering Disciplines", value: "4 Core Programs" },
@@ -194,21 +197,18 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v9");
+    const stored = localStorage.getItem("educare_prod_v10");
     let parsedState = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-    // CRITICAL SELF-HEALING: If courses is empty, immediately restore all 4 courses
     if (!parsedState.courses || parsedState.courses.length === 0) {
       parsedState.courses = JSON.parse(JSON.stringify(FALLBACK_COURSES));
     }
 
-    // Guarantee educaresir99@gmail.com is set as instructor across all courses
     parsedState.courses.forEach(c => {
       c.instructorId = "educaresir99@gmail.com";
       c.instructorName = "Educare Faculty (educaresir99@gmail.com)";
     });
 
-    // Guarantee Super Admin tftxvr@gmail.com
     let superRecord = parsedState.users.find(u => u.email === "tftxvr@gmail.com");
     if (!superRecord) {
       parsedState.users.unshift({ id: "u-super-edwin", name: "Edwin (Director)", email: "tftxvr@gmail.com", role: "SUPER_ADMIN", active: true, password: "Admin@123" });
@@ -217,7 +217,6 @@ function loadState() {
       if (!superRecord.password) superRecord.password = "Admin@123";
     }
 
-    // Guarantee Instructor educaresir99@gmail.com
     let instRecord = parsedState.users.find(u => u.email === "educaresir99@gmail.com");
     if (!instRecord) {
       parsedState.users.push({ id: "u-inst-sir", name: "Educare Faculty", email: "educaresir99@gmail.com", role: "INSTRUCTOR", active: true, password: "Instructor@123" });
@@ -234,15 +233,15 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v9", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v10", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
 }
 
 function resetDemoState() {
-  if (confirm("Reset local storage to production defaults? All 4 courses will be refreshed.")) {
-    localStorage.removeItem("educare_prod_v9");
+  if (confirm("Reset local storage to production defaults?")) {
+    localStorage.removeItem("educare_prod_v10");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -270,7 +269,7 @@ function redirectAfterLogin(role) {
 }
 
 // -------------------------------------------------------------
-// AUTHENTICATION LOGIC
+// AUTHENTICATION ENGINE
 // -------------------------------------------------------------
 function loginWithGoogleProfile(email, name, sub) {
   const sessId = generateSessionId();
@@ -341,7 +340,7 @@ function handleGoogleAuth() {
           }
         },
         error_callback: (err) => {
-          alert("Google Sign-In Notice: " + (err.message || "Ensure Authorized Origins are set in Google Cloud"));
+          alert("Google Sign-In Notice: " + (err.message || "Check Authorized Origins in Google Cloud"));
         }
       });
       tokenClient.requestAccessToken({ prompt: 'consent' });
@@ -447,7 +446,6 @@ function handleAuthSubmit(e) {
     return;
   }
 
-  // Sign In Mode
   if (!existing) {
     alert("Account not found. Click 'Create an account' below to register.");
     return;
@@ -552,7 +550,6 @@ function navigate(route, params = {}) {
 }
 
 function renderHomeView() {
-  const p = activePolicies.institution || {};
   return `
     <section class="bg-slate-900 text-white py-20 px-4 text-center">
       <div class="max-w-4xl mx-auto space-y-6">
@@ -582,7 +579,7 @@ function renderHomeView() {
       </div>
     </section>
 
-    <!-- Core Programs Grid (Always Renders All 4 Courses) -->
+    <!-- Core Programs Grid -->
     <section class="max-w-7xl mx-auto px-4 py-16">
       <div class="flex justify-between items-end mb-6">
         <div>
@@ -612,9 +609,13 @@ function renderCoursesView() {
   `;
 }
 
+// -------------------------------------------------------------
+// COURSE CARD (Bypasses payment check for Admin / Super Admin)
+// -------------------------------------------------------------
 function courseCardHtml(c) {
+  const isStaff = state.currentUser && ['SUPER_ADMIN', 'ADMIN', 'INSTRUCTOR'].includes(state.currentUser.role);
   const enrollment = state.currentUser ? state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === c.id) : null;
-  const isEnrolled = !!enrollment && enrollment.status === 'ACTIVE';
+  const isEnrolled = isStaff || (!!enrollment && enrollment.status === 'ACTIVE');
   const lectureCount = c.sections ? c.sections.reduce((acc, s) => acc + s.lectures.length, 0) : 0;
 
   return `
@@ -622,7 +623,9 @@ function courseCardHtml(c) {
       <div>
         <div class="flex justify-between items-center mb-3">
           ${
-            isEnrolled
+            isStaff
+              ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-1 rounded-full">✓ Staff Access — Unlocked</span>'
+              : isEnrolled
               ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">✓ Enrolled &amp; Active</span>'
               : '<span class="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">1-Year License</span>'
           }
@@ -641,11 +644,11 @@ function courseCardHtml(c) {
       </div>
 
       <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-        <span class="text-xs text-slate-500">Validity: 365 Days</span>
+        <span class="text-xs text-slate-500">${isStaff ? 'Master Access' : 'Validity: 365 Days'}</span>
         ${
           isEnrolled
             ? `<button onclick="startLearning('${c.id}')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition">
-                 Continue Learning →
+                 Watch Lectures →
                </button>`
             : `<button onclick="navigate('course-detail', { courseId: '${c.id}' })" class="px-5 py-2.5 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition">
                  View Course Details
@@ -656,12 +659,16 @@ function courseCardHtml(c) {
   `;
 }
 
+// -------------------------------------------------------------
+// COURSE DETAIL VIEW (Staff Bypasses Payment Completely)
+// -------------------------------------------------------------
 function renderCourseDetailView(courseId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
 
+  const isStaff = state.currentUser && ['SUPER_ADMIN', 'ADMIN', 'INSTRUCTOR'].includes(state.currentUser.role);
   const enrollment = state.currentUser ? state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === course.id) : null;
-  const isEnrolled = !!enrollment && enrollment.status === 'ACTIVE';
+  const isEnrolled = isStaff || (!!enrollment && enrollment.status === 'ACTIVE');
   const totalLectures = course.sections ? course.sections.reduce((acc, s) => acc + s.lectures.length, 0) : 0;
 
   return `
@@ -669,7 +676,9 @@ function renderCourseDetailView(courseId) {
       <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-8">
         <div class="space-y-4 max-w-2xl">
           ${
-            isEnrolled
+            isStaff
+              ? `<div class="inline-block text-xs font-bold bg-purple-100 text-purple-800 px-3 py-1 rounded-full">✓ ${state.currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'} Master Privilege (No Enrollment Needed)</div>`
+              : isEnrolled
               ? '<div class="inline-block text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">✓ License Active (365 Days)</div>'
               : '<div class="inline-block text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">Accredited Program</div>'
           }
@@ -686,14 +695,24 @@ function renderCourseDetailView(courseId) {
 
         <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center flex flex-col justify-between min-w-[260px]">
           <div>
-            <span class="text-[11px] font-bold uppercase text-slate-500">Program Tuition</span>
-            <div class="text-3xl font-black text-slate-900 mt-1">₹${course.price.toLocaleString('en-IN')}</div>
-            <p class="text-[11px] text-slate-400 mt-1">+18% GST • 365 Days Access</p>
+            ${
+              isStaff
+                ? `<div>
+                     <span class="text-[11px] font-bold uppercase text-purple-700 font-semibold">Staff Privilege</span>
+                     <div class="text-2xl font-black text-slate-900 mt-1">Full Access</div>
+                     <p class="text-[11px] text-slate-400 mt-1">Unlimited Staff Stream</p>
+                   </div>`
+                : `<div>
+                     <span class="text-[11px] font-bold uppercase text-slate-500">Program Tuition</span>
+                     <div class="text-3xl font-black text-slate-900 mt-1">₹${course.price.toLocaleString('en-IN')}</div>
+                     <p class="text-[11px] text-slate-400 mt-1">+18% GST • 365 Days Access</p>
+                   </div>`
+            }
           </div>
 
           <div class="mt-6">
             ${
-              isEnrolled
+              isStaff || isEnrolled
                 ? `<button onclick="startLearning('${course.id}')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow transition">
                      Watch All Lessons →
                    </button>`
@@ -712,6 +731,7 @@ function renderCourseDetailView(courseId) {
         </div>
       </div>
 
+      <!-- Curriculum Structure (Unlocked for Staff) -->
       <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
         <h2 class="text-xl font-bold text-slate-900">Curriculum Structure</h2>
         <div class="space-y-4">
@@ -746,6 +766,23 @@ function renderCourseDetailView(courseId) {
 function renderLearnView(courseId, lectureId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
+
+  const isStaff = state.currentUser && ['SUPER_ADMIN', 'ADMIN', 'INSTRUCTOR'].includes(state.currentUser.role);
+  const enrollment = state.currentUser ? state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === course.id) : null;
+  const isEnrolled = isStaff || (!!enrollment && enrollment.status === 'ACTIVE');
+
+  if (!isEnrolled) {
+    return `
+      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
+        <i data-lucide="lock" class="w-10 h-10 text-amber-500 mx-auto"></i>
+        <h2 class="text-xl font-bold">Course Access Restricted</h2>
+        <p class="text-slate-500 text-xs">This course content is protected. Please sign in and complete enrollment to stream lectures.</p>
+        <button onclick="navigate('course-detail', { courseId: '${course.id}' })" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl">
+          View Enrollment Page
+        </button>
+      </div>
+    `;
+  }
 
   const allLectures = course.sections.flatMap(s => s.lectures);
   const activeLecture = allLectures.find(l => l.id === lectureId) || allLectures[0];
@@ -787,7 +824,7 @@ function renderLearnView(courseId, lectureId) {
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
             <div>
               <div class="text-xs text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1">
-                <span>✓ Active License:</span> ${course.title}
+                <span>✓ ${isStaff ? 'Staff Privilege Access' : 'Active License'}:</span> ${course.title}
               </div>
               <h1 class="text-2xl font-bold text-white mt-1">${activeLecture.title}</h1>
               <p class="text-xs text-slate-400 mt-1" id="progress-status">Tracking progress automatically...</p>
@@ -877,9 +914,6 @@ function renderStudentDashboardView() {
   `;
 }
 
-// -------------------------------------------------------------
-// INSTRUCTOR STUDIO (educaresir99@gmail.com PORTAL)
-// -------------------------------------------------------------
 function renderInstructorDashboardView() {
   if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
     return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied: Instructor portal only.</div>`;
@@ -933,7 +967,7 @@ function renderInstructorDashboardView() {
 }
 
 // -------------------------------------------------------------
-// ADMIN & SUPER ADMIN OPERATIONS
+// ADMIN & SUPER ADMIN OPERATIONS (WITH DEDICATED STUDENT ROSTER)
 // -------------------------------------------------------------
 function renderAdminView() {
   if (!state.currentUser || !['ADMIN', 'SUPER_ADMIN'].includes(state.currentUser.role)) {
@@ -941,7 +975,7 @@ function renderAdminView() {
   }
 
   const isSuper = state.currentUser.role === 'SUPER_ADMIN';
-  const totalStudents = state.users.filter(u => u.role === 'STUDENT').length;
+  const studentsList = state.users.filter(u => u.role === 'STUDENT');
   const grossRevenue = state.purchases.reduce((acc, p) => acc + (p.paymentStatus === 'PAID' ? p.total : 0), 0);
 
   return `
@@ -952,7 +986,7 @@ function renderAdminView() {
             ${isSuper ? 'Super Admin Console (Director)' : 'Operations Admin Hub'}
           </span>
           <h1 class="text-3xl font-extrabold text-slate-900 mt-1">${state.currentUser.name} (${state.currentUser.email})</h1>
-          <p class="text-slate-500 text-xs mt-1">Upload lectures across all courses, manage student access, and oversee live sessions.</p>
+          <p class="text-slate-500 text-xs mt-1">Full control over courses, lecture uploads, registered students, and live webinars.</p>
         </div>
         <div class="flex gap-2">
           <button onclick="promptScheduleLiveClass()" class="px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg shadow">+ Schedule Live Class</button>
@@ -970,7 +1004,7 @@ function renderAdminView() {
         ` : ''}
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase">Registered Students</span>
-          <div class="text-2xl font-black text-slate-900 mt-1">${totalStudents}</div>
+          <div class="text-2xl font-black text-slate-900 mt-1">${studentsList.length}</div>
         </div>
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase">Active Enrollments</span>
@@ -982,7 +1016,69 @@ function renderAdminView() {
         </div>
       </div>
 
-      <!-- Universal Course Management -->
+      <!-- 1. DEDICATED STUDENT DIRECTORY (FULL NAME & EMAIL) -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+            <span>Registered Students Directory (${studentsList.length} Students)</span>
+          </div>
+          <span class="text-xs text-slate-400">Full Names &amp; Verified Email Addresses</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">Student Full Name</th>
+                <th class="px-6 py-3">Student Email Address</th>
+                <th class="px-6 py-3">Enrolled Program(s)</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3 text-right">Account Control</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${studentsList.length === 0 ? `
+                <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No students registered yet.</td></tr>
+              ` : studentsList.map(s => {
+                const studentEnrollments = state.enrollments.filter(e => e.userId === s.email && e.status === 'ACTIVE');
+                const courseNames = studentEnrollments.map(enr => {
+                  const c = state.courses.find(course => course.id === enr.courseId);
+                  return c ? c.title : enr.courseId;
+                });
+
+                return `
+                  <tr>
+                    <td class="px-6 py-4 font-bold text-slate-900 text-sm">
+                      ${s.name}
+                    </td>
+                    <td class="px-6 py-4 font-mono text-blue-600 font-medium">
+                      ${s.email}
+                    </td>
+                    <td class="px-6 py-4">
+                      ${courseNames.length > 0
+                        ? courseNames.map(name => `<span class="inline-block bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded mr-1 mb-1">✓ ${name}</span>`).join('')
+                        : '<span class="text-slate-400 text-[11px] italic">No active enrollments</span>'
+                      }
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${s.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                        ${s.active ? 'Active' : 'Locked'}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                      <button onclick="toggleUserStatus('${s.id}')" class="text-blue-600 font-bold hover:underline">
+                        ${s.active ? 'Lock Account' : 'Unlock Account'}
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2. UNIVERSAL COURSE MANAGEMENT (ADMIN CAN UPLOAD TO ALL COURSES) -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
           <span>All Courses — Upload Lectures &amp; Manage Modules</span>
@@ -1006,6 +1102,57 @@ function renderAdminView() {
                   <td class="px-6 py-4 text-right space-x-3">
                     <button onclick="promptAddSection('${c.id}')" class="text-blue-600 font-bold hover:underline">+ Module</button>
                     <button onclick="promptAddLecture('${c.id}')" class="text-emerald-600 font-bold hover:underline">📹 + Video Lecture</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. PLATFORM USERS & ROLES TABLE -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
+          <span>System Users &amp; Role Permissions</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">User</th>
+                <th class="px-6 py-3">Assigned Role</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${state.users.map(u => `
+                <tr>
+                  <td class="px-6 py-4">
+                    <strong class="text-slate-900 block">${u.name}</strong>
+                    <span class="text-slate-400 text-[11px]">${u.email}</span>
+                  </td>
+                  <td class="px-6 py-4">
+                    ${isSuper && u.email !== state.currentUser.email ? `
+                      <select onchange="changeUserRole('${u.id}', this.value)" class="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-700">
+                        <option value="STUDENT" ${u.role === 'STUDENT' ? 'selected' : ''}>STUDENT</option>
+                        <option value="INSTRUCTOR" ${u.role === 'INSTRUCTOR' ? 'selected' : ''}>INSTRUCTOR</option>
+                        <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                        <option value="SUPER_ADMIN" ${u.role === 'SUPER_ADMIN' ? 'selected' : ''}>SUPER_ADMIN</option>
+                      </select>
+                    ` : `
+                      <span class="font-bold text-blue-600 uppercase text-[11px]">${u.role}</span>
+                    `}
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                      ${u.active ? 'Active' : 'Locked'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-right space-x-2">
+                    ${u.email !== state.currentUser.email ? `
+                      <button onclick="toggleUserStatus('${u.id}')" class="text-blue-600 font-bold hover:underline">${u.active ? 'Lock' : 'Unlock'}</button>
+                    ` : '<span class="text-slate-400 text-[10px]">Current Session</span>'}
                   </td>
                 </tr>
               `).join('')}
@@ -1069,6 +1216,26 @@ function promptScheduleLiveClass() {
   saveState();
   alert("Live session scheduled and broadcasted!");
   navigate(currentRoute);
+}
+
+function changeUserRole(userId, newRole) {
+  const user = state.users.find(u => u.id === userId);
+  if (user) {
+    user.role = newRole;
+    saveState();
+    alert(`Role updated: ${user.name} is now ${newRole}.`);
+    renderNav();
+    navigate('admin');
+  }
+}
+
+function toggleUserStatus(userId) {
+  const user = state.users.find(u => u.id === userId);
+  if (user) {
+    user.active = !user.active;
+    saveState();
+    navigate('admin');
+  }
 }
 
 // -------------------------------------------------------------
@@ -1230,14 +1397,6 @@ function completePaymentAndEnroll(subtotal, tax, total, transactionId, paymentMe
   navigate('dashboard');
 }
 
-function startLearning(courseId) {
-  const course = state.courses.find(c => c.id === courseId);
-  const firstLecture = course.sections[0]?.lectures[0];
-  if (firstLecture) {
-    navigate('learn', { courseId: course.id, lectureId: firstLecture.id });
-  }
-}
-
 function showPolicyModal(key) {
   const p = activePolicies[key];
   if (!p) return;
@@ -1248,6 +1407,14 @@ function showContactModal() {
   const c = activePolicies.contact;
   if (!c) return;
   alert(`Educare Institute Contact\n\nAdmissions: ${c.admissionsEmail}\nSupport: ${c.supportEmail}\nPhone: ${c.phone}\nAddress: ${c.address}`);
+}
+
+function startLearning(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const firstLecture = course.sections[0]?.lectures[0];
+  if (firstLecture) {
+    navigate('learn', { courseId: course.id, lectureId: firstLecture.id });
+  }
 }
 
 function startEducareApp() {
