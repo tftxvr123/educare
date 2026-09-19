@@ -1,0 +1,1111 @@
+// app.js — Educare Application Controller & Router
+
+const DEFAULT_STATE = {
+  currentUser: { email: "student@educare.local", name: "Jane Student", role: "STUDENT" },
+  users: [
+    { id: "u-1", name: "Jane Student", email: "student@educare.local", role: "STUDENT", active: true },
+    { id: "u-2", name: "Prof. Alan Turing", email: "instructor@educare.local", role: "INSTRUCTOR", active: true },
+    { id: "u-3", name: "System Admin", email: "admin@educare.local", role: "ADMIN", active: true }
+  ],
+  courses: INITIAL_COURSES,
+  enrollments: [
+    { userId: "student@educare.local", courseId: "c-mechanical", enrolledAt: new Date().toISOString() }
+  ],
+  progress: {
+    "student@educare.local": {
+      "l-m-1": { seconds: 15, completed: false }
+    }
+  },
+  quizAttempts: {
+    "student@educare.local": {}
+  }
+};
+
+function loadState() {
+  const stored = localStorage.getItem("educare_phase1_launch_v1");
+  if (!stored) {
+    localStorage.setItem("educare_phase1_launch_v1", JSON.stringify(DEFAULT_STATE));
+    return JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+  return JSON.parse(stored);
+}
+
+function saveState() {
+  localStorage.setItem("educare_phase1_launch_v1", JSON.stringify(state));
+}
+
+function resetDemoData() {
+  if (confirm("Reset local database to initial Phase 1 demo state?")) {
+    localStorage.removeItem("educare_phase1_launch_v1");
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    saveState();
+    navigate('home');
+  }
+}
+
+let state = loadState();
+let currentRoute = 'home';
+let routeParams = {};
+let pendingEnrollCourse = null;
+
+// Auth
+function quickAuth(type) {
+  if (type === 'admin') {
+    state.currentUser = { email: "admin@educare.local", name: "System Admin", role: "ADMIN" };
+  } else if (type === 'instructor') {
+    state.currentUser = { email: "instructor@educare.local", name: "Prof. Alan Turing", role: "INSTRUCTOR" };
+  } else {
+    state.currentUser = { email: "student@educare.local", name: "Jane Student", role: "STUDENT" };
+  }
+  saveState();
+  toggleAuthModal(false);
+  renderNav();
+  navigate(currentRoute, routeParams);
+}
+
+function handleCustomLogin() {
+  const email = document.getElementById("auth-email").value.trim().toLowerCase();
+  if (!email) return;
+  let existing = state.users.find(u => u.email === email);
+  if (!existing) {
+    let role = "STUDENT";
+    if (email.includes("admin")) role = "ADMIN";
+    else if (email.includes("instructor")) role = "INSTRUCTOR";
+    existing = { id: "u-" + Date.now(), name: email.split('@')[0], email, role, active: true };
+    state.users.push(existing);
+  }
+  if (!existing.active) {
+    alert("This account has been deactivated by an Administrator.");
+    return;
+  }
+  state.currentUser = { email: existing.email, name: existing.name, role: existing.role };
+  saveState();
+  toggleAuthModal(false);
+  renderNav();
+  navigate(currentRoute, routeParams);
+}
+
+function logout() {
+  state.currentUser = null;
+  saveState();
+  renderNav();
+  navigate('home');
+}
+
+function toggleAuthModal(show) {
+  const modal = document.getElementById("auth-modal");
+  modal.classList.toggle("hidden", !show);
+  modal.classList.toggle("flex", show);
+}
+
+function renderNav() {
+  const authDiv = document.getElementById("auth-buttons");
+  const studentBtn = document.getElementById("nav-student-btn");
+  const instructorBtn = document.getElementById("nav-instructor-btn");
+  const adminBtn = document.getElementById("nav-admin-btn");
+
+  if (state.currentUser) {
+    studentBtn.classList.toggle("hidden", state.currentUser.role !== 'STUDENT');
+    instructorBtn.classList.toggle("hidden", state.currentUser.role !== 'INSTRUCTOR');
+    adminBtn.classList.toggle("hidden", state.currentUser.role !== 'ADMIN');
+
+    authDiv.innerHTML = `
+      <div class="flex items-center space-x-3">
+        <span class="text-xs bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-medium">
+          ${state.currentUser.name} <span class="font-bold text-blue-600">(${state.currentUser.role})</span>
+        </span>
+        <button onclick="logout()" class="text-xs font-semibold text-rose-600 hover:text-rose-700">Logout</button>
+      </div>
+    `;
+  } else {
+    studentBtn.classList.add("hidden");
+    instructorBtn.classList.add("hidden");
+    adminBtn.classList.add("hidden");
+    authDiv.innerHTML = `
+      <button onclick="toggleAuthModal(true)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
+        Sign In
+      </button>
+    `;
+  }
+  lucide.createIcons();
+}
+
+function navigate(route, params = {}) {
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+  currentRoute = route;
+  routeParams = params;
+  renderNav();
+
+  const app = document.getElementById("app");
+  if (route === 'home') app.innerHTML = renderHomeView();
+  else if (route === 'courses') app.innerHTML = renderCoursesView();
+  else if (route === 'course-detail') app.innerHTML = renderCourseDetailView(params.courseId);
+  else if (route === 'learn') app.innerHTML = renderLearnView(params.courseId, params.lectureId);
+  else if (route === 'dashboard') app.innerHTML = renderStudentDashboardView();
+  else if (route === 'instructor') app.innerHTML = renderInstructorDashboardView();
+  else if (route === 'admin') app.innerHTML = renderAdminView();
+
+  window.scrollTo(0, 0);
+  lucide.createIcons();
+}
+
+// -------------------------------------------------------------
+// VIEWS
+// -------------------------------------------------------------
+function renderHomeView() {
+  const p = POLICIES_DATA.institution;
+  return `
+    <section class="bg-slate-900 text-white py-20 px-4 text-center">
+      <div class="max-w-4xl mx-auto space-y-6">
+        <span class="inline-block text-xs uppercase tracking-widest px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-400/30 font-semibold">
+          Student-Login Based Access
+        </span>
+        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight">
+          Transform Your Future. <br><span class="text-blue-400">Empower Your Ambition with Educare.</span>
+        </h1>
+        <p class="text-slate-400 text-base md:text-lg max-w-2xl mx-auto">
+          Access comprehensive, expert-crafted courses designed for real-world mastery. Learn at your own pace with structured video lectures, downloadable guides, and uninterrupted progress tracking.
+        </p>
+        <div class="flex justify-center gap-4 pt-4">
+          <button onclick="navigate('courses')" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition shadow-lg flex items-center gap-2">
+            Browse 4 Core Courses →
+          </button>
+          ${
+            state.currentUser?.role === 'INSTRUCTOR'
+              ? `<button onclick="navigate('instructor')" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition">Instructor Studio</button>`
+              : state.currentUser?.role === 'ADMIN'
+              ? `<button onclick="navigate('admin')" class="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl transition">Admin Panel</button>`
+              : `<button onclick="navigate('dashboard')" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition">My Dashboard</button>`
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Institution Overview & Metrics -->
+    <section class="bg-white border-b border-slate-200 py-12 px-4">
+      <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
+        <div>
+          <span class="text-xs uppercase font-bold text-blue-600 tracking-wider">About Our Training Academy</span>
+          <h2 class="text-2xl font-bold text-slate-900 mt-1">${p.name}</h2>
+          <p class="text-slate-600 text-sm mt-3 leading-relaxed">${p.about}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          ${p.stats.map(s => `
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div class="text-xl font-extrabold text-blue-600">${s.value}</div>
+              <div class="text-xs text-slate-500 mt-1">${s.label}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Announcements Notice Board -->
+    <section class="max-w-6xl mx-auto px-4 pt-12">
+      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <i data-lucide="bell" class="w-5 h-5 text-blue-600"></i>
+          <h3 class="font-bold text-slate-900 text-base">Institute Notice Board & Announcements</h3>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          ${POLICIES_DATA.announcements.map(a => `
+            <div class="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+              <div class="flex items-center justify-between text-[11px] mb-1">
+                <span class="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">${a.badge}</span>
+                <span class="text-slate-400 font-medium">${a.date}</span>
+              </div>
+              <h4 class="font-bold text-sm text-slate-900 mt-1">${a.title}</h4>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">${a.content}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Available Courses Grid -->
+    <section class="max-w-7xl mx-auto px-4 py-16">
+      <div class="flex justify-between items-end mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Available Launch Courses</h2>
+          <p class="text-slate-500 text-sm">Industrial Engineering & CAD/BIM Disciplines</p>
+        </div>
+        <button onclick="navigate('courses')" class="text-blue-600 font-semibold hover:underline text-xs">View Full Curriculum →</button>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        ${state.courses.map(courseCardHtml).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderCoursesView() {
+  return `
+    <div class="max-w-7xl mx-auto px-4 py-12">
+      <div class="mb-8">
+        <h1 class="text-3xl font-extrabold text-slate-900">All Available Courses</h1>
+        <p class="text-slate-500 text-sm mt-1">Enroll via student login to access full lectures, quizzes, and notes. No course fees required for this launch.</p>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        ${state.courses.map(courseCardHtml).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function courseCardHtml(c) {
+  const isEnrolled = state.currentUser && state.enrollments.some(
+    e => e.userId === state.currentUser.email && e.courseId === c.id
+  );
+  const lectureCount = c.sections.reduce((acc, s) => acc + s.lectures.length, 0);
+
+  return `
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+      <div>
+        <div class="flex justify-between items-center mb-3">
+          ${
+            isEnrolled
+              ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">✓ Enrolled — All Lessons Unlocked</span>'
+              : '<span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">Student Access</span>'
+          }
+          <span class="text-xs text-slate-400 font-medium">${c.discipline || 'Engineering'}</span>
+        </div>
+        <h3 class="font-bold text-xl text-slate-900">${c.title}</h3>
+        <p class="text-xs text-blue-600 font-semibold mt-0.5">Faculty: ${c.instructorName}</p>
+        <p class="text-slate-500 text-xs mt-2 leading-relaxed">${c.shortDescription}</p>
+        <div class="mt-4 flex items-center gap-3 text-xs text-slate-400">
+          <span>${c.sections.length} Modules</span>
+          <span>•</span>
+          <span>${lectureCount} Lessons</span>
+          ${c.quizzes?.length ? `<span>•</span><span class="text-indigo-600 font-semibold">${c.quizzes.length} Assessment</span>` : ''}
+        </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+        <span class="text-xs font-semibold text-slate-500">Access: Student Login</span>
+        ${
+          isEnrolled
+            ? `<button onclick="startLearning('${c.id}')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition">
+                 Watch Lectures →
+               </button>`
+            : `<button onclick="navigate('course-detail', { courseId: '${c.id}' })" class="px-5 py-2.5 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition">
+                 View &amp; Enroll
+               </button>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function renderCourseDetailView(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course) return `<div class="p-8">Course not found.</div>`;
+
+  const isEnrolled = state.currentUser && state.enrollments.some(
+    e => e.userId === state.currentUser.email && e.courseId === course.id
+  );
+  const totalLectures = course.sections.reduce((acc, s) => acc + s.lectures.length, 0);
+
+  return `
+    <div class="max-w-5xl mx-auto px-4 py-12 space-y-8">
+      <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-8">
+        <div class="space-y-4 max-w-2xl">
+          ${
+            isEnrolled
+              ? '<div class="inline-block text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">✓ Enrolled Course — All Modules Active</div>'
+              : '<div class="inline-block text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">Core Engineering Curriculum</div>'
+          }
+          <h1 class="text-3xl font-extrabold text-slate-900">${course.title}</h1>
+          <p class="text-slate-600 text-sm leading-relaxed">${course.description}</p>
+          <div class="text-xs text-slate-500 font-medium flex items-center gap-4">
+            <span>Instructor: <strong class="text-slate-700">${course.instructorName}</strong></span>
+            <span>•</span>
+            <span>${course.sections.length} Modules</span>
+            <span>•</span>
+            <span>${totalLectures} Video Lessons</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center flex flex-col justify-between min-w-[240px]">
+          <div>
+            <span class="text-[11px] font-bold uppercase text-slate-500">Course Access</span>
+            <div class="text-xl font-bold text-slate-900 mt-1">Student Enrollment</div>
+            <p class="text-[11px] text-slate-400 mt-1">Free access during launch phase</p>
+          </div>
+          ${
+            isEnrolled
+              ? `<button onclick="startLearning('${course.id}')" class="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow transition">
+                   Watch All Lessons →
+                 </button>`
+              : `<button onclick="openEnrollmentModal('${course.id}')" class="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition">
+                   Enroll &amp; Unlock All
+                 </button>`
+          }
+        </div>
+      </div>
+
+      <!-- Curriculum breakdown -->
+      <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <h2 class="text-xl font-bold text-slate-900">Complete Syllabus</h2>
+        <div class="space-y-4">
+          ${course.sections.map((section, sIdx) => `
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+              <div class="bg-slate-50 px-4 py-3 font-semibold text-xs text-slate-700 flex justify-between">
+                <span>Module ${sIdx + 1}: ${section.title}</span>
+                <span>${section.lectures.length} lessons</span>
+              </div>
+              <div class="divide-y divide-slate-100">
+                ${section.lectures.map(lecture => `
+                  <div class="px-4 py-3.5 flex items-center justify-between text-sm hover:bg-slate-50">
+                    <div class="flex items-center space-x-3">
+                      <i data-lucide="${isEnrolled ? 'play-circle' : 'lock'}" class="w-4 h-4 ${isEnrolled ? 'text-emerald-600' : 'text-slate-400'}"></i>
+                      <span class="${isEnrolled ? 'text-slate-800 font-medium' : 'text-slate-500'}">${lecture.title}</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                      <span class="text-xs text-slate-400 font-mono">${lecture.duration}s</span>
+                      ${isEnrolled ? `<button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${lecture.id}' })" class="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold rounded transition">Play</button>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderLearnView(courseId, lectureId) {
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course) return `<div class="p-8">Course not found.</div>`;
+
+  const isEnrolled = state.currentUser && state.enrollments.some(
+    e => e.userId === state.currentUser.email && e.courseId === course.id
+  );
+  const isStaff = state.currentUser && (state.currentUser.role === 'ADMIN' || state.currentUser.role === 'INSTRUCTOR');
+
+  if (!isEnrolled && !isStaff) {
+    return `
+      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
+        <i data-lucide="lock" class="w-10 h-10 text-amber-500 mx-auto"></i>
+        <h2 class="text-xl font-bold">Course Enrollment Required</h2>
+        <p class="text-slate-500 text-xs">Enroll in this course to unlock all lectures and assessments.</p>
+        <button onclick="navigate('course-detail', { courseId: '${course.id}' })" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl">
+          Go to Course Enrollment Page
+        </button>
+      </div>
+    `;
+  }
+
+  const allLectures = course.sections.flatMap(s => s.lectures);
+  const activeLecture = allLectures.find(l => l.id === lectureId) || allLectures[0];
+
+  let savedSeconds = 0;
+  if (state.currentUser && state.progress[state.currentUser.email]?.[activeLecture.id]) {
+    savedSeconds = state.progress[state.currentUser.email][activeLecture.id].seconds || 0;
+  }
+
+  const currentIndex = allLectures.findIndex(l => l.id === activeLecture.id);
+  const prevLecture = allLectures[currentIndex - 1];
+  const nextLecture = allLectures[currentIndex + 1];
+
+  setTimeout(() => initVideoPlayer(activeLecture.id, savedSeconds), 60);
+
+  const videoSource = localBlobUrl || activeLecture.videoUrl;
+
+  return `
+    <div class="bg-slate-950 text-slate-100 min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
+      <div class="flex-1 p-4 lg:p-8 overflow-y-auto">
+        <div class="max-w-4xl mx-auto space-y-6">
+
+          <div class="relative bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl aspect-video">
+            <video
+              id="live-player"
+              src="${videoSource}"
+              controls
+              playsinline
+              preload="auto"
+              class="w-full h-full object-contain"
+            ></video>
+            <div id="resume-toast" class="absolute top-4 left-4 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow hidden">
+              Resumed at <span id="resume-time-str">00:00</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs text-slate-400">
+            <span>Want to test with a local video file?</span>
+            <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg font-medium border border-slate-700">
+              📁 Load Local MP4 File
+              <input type="file" accept="video/mp4,video/*" class="hidden" onchange="handleLocalVideoUpload(event)" />
+            </label>
+          </div>
+
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+            <div>
+              <div class="text-xs text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1">
+                <span>✓ Enrolled Access:</span> ${course.title}
+              </div>
+              <h1 class="text-2xl font-bold text-white mt-1">${activeLecture.title}</h1>
+              <p class="text-xs text-slate-400 mt-1" id="progress-status">Tracking progress automatically...</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              ${prevLecture ? `<button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${prevLecture.id}' })" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg">← Previous</button>` : ''}
+              ${nextLecture ? `<button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture.id}' })" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg">Next Lesson →</button>` : ''}
+            </div>
+          </div>
+
+          <!-- Quizzes -->
+          ${course.quizzes && course.quizzes.length > 0 ? `
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400"></i> Module Knowledge Check
+              </h3>
+              <div class="space-y-3">
+                ${course.quizzes.map(quiz => {
+                  const userAttempt = state.quizAttempts[state.currentUser?.email]?.[quiz.id];
+                  return `
+                    <div class="p-4 bg-slate-800/40 rounded-xl border border-slate-700/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                      <div>
+                        <div class="font-semibold text-sm text-white">${quiz.title}</div>
+                        <div class="text-xs text-slate-400 mt-0.5">${quiz.questions.length} Questions • Passing: ${quiz.passingScore}%</div>
+                        ${userAttempt ? `
+                          <div class="mt-2 text-xs font-bold ${userAttempt.passed ? 'text-emerald-400' : 'text-amber-400'}">
+                            Previous Score: ${userAttempt.score}% (${userAttempt.passed ? 'Passed ✓' : 'Needs Retake'})
+                          </div>
+                        ` : ''}
+                      </div>
+                      <button onclick="openQuizModal('${course.id}', '${quiz.id}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">
+                        ${userAttempt ? 'Retake Quiz' : 'Attempt Quiz'}
+                      </button>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Resources -->
+          ${course.resources.length > 0 ? `
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+              <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Downloadable Study Materials</h3>
+              <div class="grid sm:grid-cols-2 gap-3">
+                ${course.resources.map(r => `
+                  <div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/40 text-xs">
+                    <span class="font-medium text-slate-200">${r.title}</span>
+                    <button onclick="alert('Download simulated for: ${r.title}')" class="text-blue-400 hover:underline">Download (${r.size})</button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <div class="w-full lg:w-80 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 p-4 overflow-y-auto">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">All Course Lessons</h2>
+        <div class="space-y-4">
+          ${course.sections.map(s => `
+            <div class="space-y-1">
+              <div class="text-[11px] font-bold text-slate-400 uppercase px-2 py-1">${s.title}</div>
+              ${s.lectures.map(l => {
+                const isCurrent = l.id === activeLecture.id;
+                const isCompleted = state.currentUser && state.progress[state.currentUser.email]?.[l.id]?.completed;
+                return `
+                  <button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${l.id}' })" class="w-full text-left p-2.5 rounded-lg text-xs flex items-center justify-between ${isCurrent ? 'bg-blue-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'} transition">
+                    <div class="flex items-center space-x-2 truncate">
+                      <i data-lucide="${isCompleted ? 'check-circle' : 'play'}" class="w-3.5 h-3.5 shrink-0 ${isCompleted ? 'text-emerald-400' : 'text-slate-400'}"></i>
+                      <span class="truncate">${l.title}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-mono">${l.duration}s</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStudentDashboardView() {
+  if (!state.currentUser || state.currentUser.role !== 'STUDENT') {
+    return `
+      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
+        <h2 class="text-xl font-bold">Student Access Only</h2>
+        <button onclick="quickAuth('student')" class="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg">Sign In as Jane</button>
+      </div>
+    `;
+  }
+
+  const userEnrollments = state.enrollments.filter(e => e.userId === state.currentUser.email);
+  const enrolledCourses = state.courses.filter(c => userEnrollments.some(e => e.courseId === c.id));
+  const userProgress = state.progress[state.currentUser.email] || {};
+  const userAttempts = state.quizAttempts[state.currentUser.email] || {};
+
+  let completedCoursesCount = 0;
+  let totalCompletedLectures = 0;
+
+  enrolledCourses.forEach(course => {
+    const lectures = course.sections.flatMap(s => s.lectures);
+    const completed = lectures.filter(l => userProgress[l.id]?.completed).length;
+    totalCompletedLectures += completed;
+    if (lectures.length > 0 && completed === lectures.length) completedCoursesCount++;
+  });
+
+  return `
+    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+      <div>
+        <span class="text-xs uppercase font-bold text-emerald-600 tracking-wider">Student Learning Portal</span>
+        <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Welcome back, ${state.currentUser.name}</h1>
+        <p class="text-slate-500 text-sm mt-1">Track your course completions, watch engineering lectures, and review quiz achievements.</p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Enrolled Courses</span>
+          <div class="text-2xl font-black text-slate-900 mt-1">${enrolledCourses.length}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Lectures Completed</span>
+          <div class="text-2xl font-black text-blue-600 mt-1">${totalCompletedLectures}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Completed Courses</span>
+          <div class="text-2xl font-black text-emerald-600 mt-1">${completedCoursesCount}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Quizzes Passed</span>
+          <div class="text-2xl font-black text-indigo-600 mt-1">${Object.values(userAttempts).filter(a => a.passed).length}</div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        ${enrolledCourses.map(course => {
+          const lectures = course.sections.flatMap(s => s.lectures);
+          const total = lectures.length;
+          const completed = lectures.filter(l => userProgress[l.id]?.completed).length;
+          const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+          const nextLecture = lectures.find(l => !userProgress[l.id]?.completed) || lectures[0];
+
+          return `
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded">All Lessons Unlocked</span>
+                  <span class="text-xs font-bold text-slate-900">${pct}% Done</span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mt-3">${course.title}</h3>
+                <p class="text-slate-500 text-xs mt-1 leading-relaxed">${course.shortDescription}</p>
+
+                <div class="mt-6 space-y-2">
+                  <div class="flex justify-between text-xs text-slate-600 font-medium">
+                    <span>${completed} of ${total} Lessons Completed</span>
+                  </div>
+                  <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-600 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture?.id}' })" class="w-full mt-6 py-3 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+                <i data-lucide="play" class="w-4 h-4 fill-current"></i> Continue Learning →
+              </button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderInstructorDashboardView() {
+  if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
+    return `
+      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
+        <h2 class="text-xl font-bold">Instructor Access Only</h2>
+        <button onclick="quickAuth('instructor')" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg">Sign In as Instructor</button>
+      </div>
+    `;
+  }
+
+  const myCourses = state.courses.filter(c => c.instructorId === state.currentUser.email);
+  const totalStudents = state.enrollments.filter(e => myCourses.some(c => c.id === e.courseId)).length;
+
+  return `
+    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="text-xs uppercase font-bold text-indigo-600 tracking-wider">Instructor Studio</span>
+          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">${state.currentUser.name}</h1>
+          <p class="text-slate-500 text-xs mt-1">Manage technical courses, engineering modules, and assessment quizzes.</p>
+        </div>
+        <button onclick="promptCreateCourse()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4"></i> Add New Course
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Courses Authored</span>
+          <div class="text-2xl font-black text-slate-900 mt-1">${myCourses.length}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Enrolled Students</span>
+          <div class="text-2xl font-black text-indigo-600 mt-1">${totalStudents}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Total Lessons</span>
+          <div class="text-2xl font-black text-slate-900 mt-1">
+            ${myCourses.reduce((acc, c) => acc + c.sections.reduce((sAcc, s) => sAcc + s.lectures.length, 0), 0)}
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
+          My Engineering Courses
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">Course Title</th>
+                <th class="px-6 py-3">Curriculum Structure</th>
+                <th class="px-6 py-3">Quizzes</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${myCourses.map(c => `
+                <tr>
+                  <td class="px-6 py-4 font-bold text-slate-900">${c.title}</td>
+                  <td class="px-6 py-4">${c.sections.length} Modules • ${c.sections.reduce((a, s) => a + s.lectures.length, 0)} Lectures</td>
+                  <td class="px-6 py-4">${c.quizzes?.length || 0} Quizzes</td>
+                  <td class="px-6 py-4 text-right space-x-3">
+                    <button onclick="promptAddSection('${c.id}')" class="text-blue-600 font-bold hover:underline">+ Module</button>
+                    <button onclick="promptAddLecture('${c.id}')" class="text-indigo-600 font-bold hover:underline">+ Lesson</button>
+                    <button onclick="promptCreateQuiz('${c.id}')" class="text-emerald-600 font-bold hover:underline">+ Quiz</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderAdminView() {
+  if (!state.currentUser || state.currentUser.role !== 'ADMIN') {
+    return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied. Admin account required.</div>`;
+  }
+
+  const totalStudents = state.users.filter(u => u.role === 'STUDENT').length;
+  const totalInstructors = state.users.filter(u => u.role === 'INSTRUCTOR').length;
+
+  return `
+    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+      <div>
+        <h1 class="text-3xl font-extrabold text-slate-900">Admin Control Center</h1>
+        <p class="text-slate-500 text-xs mt-1">Platform management, user role assignments, and platform stats.</p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Total Students</span>
+          <div class="text-2xl font-black text-slate-900 mt-1">${totalStudents}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Total Instructors</span>
+          <div class="text-2xl font-black text-indigo-600 mt-1">${totalInstructors}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Active Courses</span>
+          <div class="text-2xl font-black text-emerald-600 mt-1">${state.courses.length}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Course Enrollments</span>
+          <div class="text-2xl font-black text-blue-600 mt-1">${state.enrollments.length}</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
+          <span>Platform Users &amp; Roles</span>
+          <button onclick="promptAddUser()" class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-lg shadow">+ Add User</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">Name &amp; Email</th>
+                <th class="px-6 py-3">Role</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${state.users.map(u => `
+                <tr>
+                  <td class="px-6 py-4">
+                    <strong class="text-slate-900 block">${u.name}</strong>
+                    <span class="text-slate-400 text-[11px]">${u.email}</span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <select onchange="changeUserRole('${u.id}', this.value)" class="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-700">
+                      <option value="STUDENT" ${u.role === 'STUDENT' ? 'selected' : ''}>STUDENT</option>
+                      <option value="INSTRUCTOR" ${u.role === 'INSTRUCTOR' ? 'selected' : ''}>INSTRUCTOR</option>
+                      <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                    </select>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                      ${u.active ? 'Active' : 'Disabled'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-right space-x-2">
+                    <button onclick="toggleUserStatus('${u.id}')" class="text-blue-600 font-bold hover:underline">
+                      ${u.active ? 'Disable' : 'Enable'}
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// -------------------------------------------------------------
+// PUBLIC MODALS (POLICIES & CONTACT)
+// -------------------------------------------------------------
+function showPolicyModal(policyKey) {
+  const policy = POLICIES_DATA[policyKey];
+  if (!policy) return;
+
+  const html = `
+    <div id="active-policy-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 max-h-[85vh] flex flex-col">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">${policy.title}</h3>
+            <span class="text-xs text-slate-400">${policy.lastUpdated}</span>
+          </div>
+          <button onclick="document.getElementById('active-policy-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="overflow-y-auto py-4 space-y-4 text-xs text-slate-600 leading-relaxed">
+          ${policy.sections.map(s => `
+            <div>
+              <h4 class="font-bold text-slate-800 text-sm mb-1">${s.heading}</h4>
+              <p>${s.body}</p>
+            </div>
+          `).join('')}
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end">
+          <button onclick="document.getElementById('active-policy-modal').remove()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function showContactModal() {
+  const c = POLICIES_DATA.contact;
+  const html = `
+    <div id="active-contact-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+          <h3 class="text-lg font-bold text-slate-900">Institute Contact Details</h3>
+          <button onclick="document.getElementById('active-contact-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-3 text-xs text-slate-600">
+          <div>
+            <strong class="text-slate-800 block mb-0.5">Admissions & Enquiries:</strong>
+            <a href="mailto:${c.email}" class="text-blue-600 hover:underline">${c.email}</a>
+          </div>
+          <div>
+            <strong class="text-slate-800 block mb-0.5">Student Support:</strong>
+            <a href="mailto:${c.supportEmail}" class="text-blue-600 hover:underline">${c.supportEmail}</a>
+          </div>
+          <div>
+            <strong class="text-slate-800 block mb-0.5">Phone:</strong>
+            <span>${c.phone}</span>
+          </div>
+          <div>
+            <strong class="text-slate-800 block mb-0.5">Office Hours:</strong>
+            <span>${c.hours}</span>
+          </div>
+          <div>
+            <strong class="text-slate-800 block mb-0.5">Campus Address:</strong>
+            <span>${c.address}</span>
+          </div>
+        </div>
+        <div class="pt-2 border-t border-slate-100 flex justify-end">
+          <button onclick="document.getElementById('active-contact-modal').remove()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// -------------------------------------------------------------
+// QUIZ MODAL & GRADING
+// -------------------------------------------------------------
+function openQuizModal(courseId, quizId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const quiz = course?.quizzes.find(q => q.id === quizId);
+  if (!quiz) return;
+
+  const modalHtml = `
+    <div id="active-quiz-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 my-8">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+          <h3 class="text-lg font-bold text-slate-900">${quiz.title}</h3>
+          <button onclick="document.getElementById('active-quiz-modal').remove()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+        <form id="quiz-form" onsubmit="submitQuiz(event, '${courseId}', '${quizId}')" class="mt-4 space-y-6">
+          ${quiz.questions.map((q, qIdx) => `
+            <div class="space-y-2">
+              <p class="text-sm font-semibold text-slate-800">${qIdx + 1}. ${q.questionText}</p>
+              <div class="space-y-1.5 pl-2">
+                ${q.options.map((opt, optIdx) => `
+                  <label class="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer p-2 rounded-lg hover:bg-slate-50 border border-slate-100">
+                    <input type="radio" name="question_${qIdx}" value="${optIdx}" required class="accent-indigo-600" />
+                    <span>${opt}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+          <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
+            <button type="button" onclick="document.getElementById('active-quiz-modal').remove()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow">Submit Answers</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function submitQuiz(e, courseId, quizId) {
+  e.preventDefault();
+  const course = state.courses.find(c => c.id === courseId);
+  const quiz = course?.quizzes.find(q => q.id === quizId);
+  if (!quiz || !state.currentUser) return;
+
+  const formData = new FormData(e.target);
+  let correctCount = 0;
+
+  quiz.questions.forEach((q, qIdx) => {
+    const selected = parseInt(formData.get(`question_${qIdx}`));
+    if (selected === q.correctAnswerIndex) correctCount++;
+  });
+
+  const score = Math.round((correctCount / quiz.questions.length) * 100);
+  const passed = score >= quiz.passingScore;
+
+  if (!state.quizAttempts[state.currentUser.email]) {
+    state.quizAttempts[state.currentUser.email] = {};
+  }
+
+  state.quizAttempts[state.currentUser.email][quiz.id] = {
+    score,
+    passed,
+    attemptedAt: new Date().toISOString()
+  };
+  saveState();
+
+  document.getElementById('active-quiz-modal').remove();
+  alert(`Assessment Complete!\nYour Score: ${score}%\nResult: ${passed ? 'PASSED ✓' : 'NEEDS RETAKE'}`);
+  navigate('learn', { courseId, lectureId: course.sections[0]?.lectures[0]?.id });
+}
+
+// -------------------------------------------------------------
+// ENROLLMENT & MUTATIONS
+// -------------------------------------------------------------
+function openEnrollmentModal(courseId) {
+  if (!state.currentUser) {
+    toggleAuthModal(true);
+    return;
+  }
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course) return;
+
+  pendingEnrollCourse = course;
+  document.getElementById("pay-course-title").innerText = course.title;
+  togglePaymentModal(true);
+}
+
+function togglePaymentModal(show) {
+  const modal = document.getElementById("payment-modal");
+  modal.classList.toggle("hidden", !show);
+  modal.classList.toggle("flex", show);
+}
+
+function confirmEnrollment() {
+  if (!pendingEnrollCourse || !state.currentUser) return;
+
+  const alreadyEnrolled = state.enrollments.some(
+    e => e.userId === state.currentUser.email && e.courseId === pendingEnrollCourse.id
+  );
+
+  if (!alreadyEnrolled) {
+    state.enrollments.push({
+      userId: state.currentUser.email,
+      courseId: pendingEnrollCourse.id,
+      enrolledAt: new Date().toISOString()
+    });
+    saveState();
+  }
+
+  togglePaymentModal(false);
+  navigate('dashboard');
+}
+
+function startLearning(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const firstLecture = course.sections[0]?.lectures[0];
+  if (firstLecture) {
+    navigate('learn', { courseId: course.id, lectureId: firstLecture.id });
+  }
+}
+
+function promptCreateCourse() {
+  const title = prompt("Enter course title (e.g., Structural Engineering):");
+  if (!title) return;
+  const desc = prompt("Enter short description:") || "Technical engineering curriculum.";
+
+  state.courses.unshift({
+    id: "c-" + Date.now(),
+    slug: title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+    title: title,
+    discipline: "Engineering",
+    instructorId: state.currentUser.email,
+    instructorName: state.currentUser.name,
+    shortDescription: desc,
+    description: desc,
+    sections: [
+      {
+        id: "s-" + Date.now(),
+        title: "Module 1: Orientation",
+        lectures: [
+          { id: "l-" + Date.now(), title: "1. Welcome Lesson", duration: 46, videoUrl: RELIABLE_VIDEOS.stream1 }
+        ]
+      }
+    ],
+    resources: [],
+    quizzes: []
+  });
+
+  saveState();
+  navigate(currentRoute);
+}
+
+function promptAddSection(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course) return;
+  const title = prompt("Enter Module / Section Title:");
+  if (!title) return;
+
+  course.sections.push({
+    id: "s-" + Date.now(),
+    title: title,
+    lectures: []
+  });
+  saveState();
+  navigate(currentRoute);
+}
+
+function promptAddLecture(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course || course.sections.length === 0) return;
+  const title = prompt("Enter lesson title:");
+  if (!title) return;
+  const videoUrl = prompt("Enter video URL (or leave blank for standard demo):") || RELIABLE_VIDEOS.stream1;
+
+  course.sections[0].lectures.push({
+    id: "l-" + Date.now(),
+    title: title,
+    duration: 46,
+    videoUrl: videoUrl
+  });
+  saveState();
+  navigate(currentRoute);
+}
+
+function promptCreateQuiz(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course) return;
+  const title = prompt("Enter Assessment Title:", "Module Knowledge Quiz");
+  if (!title) return;
+
+  if (!course.quizzes) course.quizzes = [];
+  course.quizzes.push({
+    id: "q-" + Date.now(),
+    title: title,
+    passingScore: 70,
+    questions: [
+      {
+        id: "qq-" + Date.now(),
+        questionText: "Sample question: Is this engineering course 100% free of billing?",
+        options: ["Yes, zero billing", "Requires payment", "Monthly trial", "None"],
+        correctAnswerIndex: 0
+      }
+    ]
+  });
+  saveState();
+  navigate(currentRoute);
+}
+
+function promptAddUser() {
+  const name = prompt("User full name:");
+  if (!name) return;
+  const email = prompt("User email address:");
+  if (!email) return;
+  const role = prompt("Role (STUDENT, INSTRUCTOR, ADMIN):", "STUDENT").toUpperCase();
+
+  state.users.push({
+    id: "u-" + Date.now(),
+    name,
+    email: email.toLowerCase(),
+    role: ["STUDENT", "INSTRUCTOR", "ADMIN"].includes(role) ? role : "STUDENT",
+    active: true
+  });
+  saveState();
+  navigate('admin');
+}
+
+function changeUserRole(userId, newRole) {
+  const user = state.users.find(u => u.id === userId);
+  if (user) {
+    user.role = newRole;
+    saveState();
+    renderNav();
+  }
+}
+
+function toggleUserStatus(userId) {
+  const user = state.users.find(u => u.id === userId);
+  if (user) {
+    user.active = !user.active;
+    saveState();
+    navigate('admin');
+  }
+}
+
+// -------------------------------------------------------------
+// BOOTSTRAP (Starts on Home View)
+// -------------------------------------------------------------
+window.onload = () => {
+  navigate('home');
+};
