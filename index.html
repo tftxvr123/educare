@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Educare — Online Learning Platform (Phase 1)</title>
+  <title>Educare — Online Learning Platform</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons CDN -->
@@ -25,13 +25,13 @@
       <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('home')">
         <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xl shadow">E</div>
         <span class="text-xl font-bold tracking-tight text-slate-900">Educare</span>
-        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">Phase 1 Core</span>
+        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">Production LMS</span>
       </div>
 
       <nav class="hidden md:flex items-center space-x-6 text-sm font-medium">
         <button onclick="navigate('home')" class="text-slate-600 hover:text-blue-600">Home</button>
-        <button onclick="navigate('courses')" class="text-slate-600 hover:text-blue-600">Courses</button>
-        <button id="nav-student-btn" onclick="navigate('dashboard')" class="text-slate-600 hover:text-blue-600 font-medium">My Dashboard</button>
+        <button onclick="navigate('courses')" class="text-slate-600 hover:text-blue-600">Programs</button>
+        <button id="nav-student-btn" onclick="navigate('dashboard')" class="text-slate-600 hover:text-blue-600 font-medium">Student Dashboard</button>
         <button id="nav-instructor-btn" onclick="navigate('instructor')" class="hidden text-indigo-600 hover:text-indigo-700 font-semibold">Instructor Studio</button>
         <button id="nav-admin-btn" onclick="navigate('admin')" class="hidden text-amber-600 hover:text-amber-700 font-semibold">Admin Panel</button>
       </nav>
@@ -42,7 +42,7 @@
     </div>
   </header>
 
-  <!-- MAIN CONTAINER (Dynamically injected via app.js) -->
+  <!-- MAIN VIEW CONTAINER -->
   <main id="app" class="flex-1"></main>
 
   <!-- FOOTER WITH PUBLIC POLICIES & CONTACT -->
@@ -54,26 +54,26 @@
             <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xs">E</div>
             <span class="text-white font-bold text-sm">Educare Technical Training Institute</span>
           </div>
-          <p class="text-slate-400 mt-1">Four Core Engineering Disciplines • Student-Login Access</p>
+          <p class="text-slate-400 mt-1">Four Core Engineering Disciplines • 365 Days Certified License</p>
         </div>
         <div class="flex flex-wrap justify-center gap-4 text-slate-300 font-medium">
-          <button onclick="showContactModal()" class="hover:text-blue-400">Contact Us</button>
+          <button onclick="showContactModal()" class="hover:text-blue-400">Official Contact</button>
           <span>•</span>
           <button onclick="showPolicyModal('privacyPolicy')" class="hover:text-blue-400">Privacy Policy</button>
           <span>•</span>
           <button onclick="showPolicyModal('termsConditions')" class="hover:text-blue-400">Terms &amp; Conditions</button>
           <span>•</span>
-          <button onclick="showPolicyModal('refundPolicy')" class="hover:text-blue-400">Refund Policy</button>
+          <button onclick="showPolicyModal('refundPolicy')" class="hover:text-blue-400">7-Day Refund Policy</button>
         </div>
       </div>
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500">
-        <p>© 2026 Educare. Free Phase 1 Core LMS.</p>
-        <button onclick="resetDemoData()" class="text-slate-500 hover:text-rose-400 underline">Reset Demo State</button>
+        <p>© 2026 Educare Institute. All rights reserved. PCI-DSS Encrypted Gateway Integration.</p>
+        <button onclick="resetDemoState()" class="text-slate-500 hover:text-rose-400 underline">Restore Demo State</button>
       </div>
     </div>
   </footer>
 
-  <!-- AUTH MODAL -->
+  <!-- AUTH MODAL (Google OAuth + Role Switcher) -->
   <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
       <div class="flex justify-between items-center pb-4 border-b border-slate-100">
@@ -81,31 +81,52 @@
         <button onclick="toggleAuthModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
       </div>
       <div class="mt-4 space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">Switch User Role (1-Click)</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button onclick="quickAuth('student')" class="p-2.5 border border-blue-200 bg-blue-50 text-blue-800 rounded-xl text-xs font-medium hover:bg-blue-100 text-left transition">
-              <span class="block font-bold">Student</span>
-              Jane
-            </button>
-            <button onclick="quickAuth('instructor')" class="p-2.5 border border-indigo-200 bg-indigo-50 text-indigo-800 rounded-xl text-xs font-medium hover:bg-indigo-100 text-left transition">
-              <span class="block font-bold">Instructor</span>
-              Prof. Alan
-            </button>
-            <button onclick="quickAuth('admin')" class="p-2.5 border border-amber-200 bg-amber-50 text-amber-800 rounded-xl text-xs font-medium hover:bg-amber-100 text-left transition">
-              <span class="block font-bold">Admin</span>
-              System
-            </button>
-          </div>
-        </div>
+        
+        <!-- Google OAuth 1-Click -->
+        <button onclick="handleGoogleAuth()" class="w-full py-2.5 px-4 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-3 transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Continue with Google / Gmail
+        </button>
+
         <div class="relative flex py-1 items-center">
           <div class="flex-grow border-t border-slate-200"></div>
-          <span class="flex-shrink mx-3 text-xs text-slate-400 uppercase">Or custom email</span>
+          <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase font-semibold">Or 1-Click Role Switch</span>
           <div class="flex-grow border-t border-slate-200"></div>
         </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="quickAuth('student')" class="p-2.5 border border-blue-200 bg-blue-50 text-blue-800 rounded-xl text-xs font-medium hover:bg-blue-100 text-left transition">
+            <span class="block font-bold">Student</span>
+            Jane (Enrolled)
+          </button>
+          <button onclick="quickAuth('instructor')" class="p-2.5 border border-indigo-200 bg-indigo-50 text-indigo-800 rounded-xl text-xs font-medium hover:bg-indigo-100 text-left transition">
+            <span class="block font-bold">Instructor</span>
+            Prof. Alan
+          </button>
+          <button onclick="quickAuth('admin')" class="p-2.5 border border-amber-200 bg-amber-50 text-amber-800 rounded-xl text-xs font-medium hover:bg-amber-100 text-left transition">
+            <span class="block font-bold">Admin</span>
+            Course Ops
+          </button>
+          <button onclick="quickAuth('superadmin')" class="p-2.5 border border-rose-200 bg-rose-50 text-rose-800 rounded-xl text-xs font-medium hover:bg-rose-100 text-left transition">
+            <span class="block font-bold">Super Admin</span>
+            Director
+          </button>
+        </div>
+
+        <div class="relative flex py-1 items-center">
+          <div class="flex-grow border-t border-slate-200"></div>
+          <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase font-semibold">Or custom email</span>
+          <div class="flex-grow border-t border-slate-200"></div>
+        </div>
+
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Email</label>
-          <input type="email" id="auth-email" placeholder="user@educare.local" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+          <input type="email" id="auth-email" placeholder="user@educare.org.in" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
         </div>
         <button onclick="handleCustomLogin()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition">
           Sign In
@@ -114,30 +135,9 @@
     </div>
   </div>
 
-  <!-- ENROLLMENT MODAL -->
-  <div id="payment-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-      <div class="inline-flex items-center gap-2 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded text-emerald-800 text-xs font-bold uppercase mb-4">
-        <span>✓</span> Student Course Enrollment
-      </div>
-      <h3 class="text-xl font-bold text-slate-900" id="pay-course-title">Course Title</h3>
-      <p class="text-xs text-slate-500 mt-2">
-        Enrolling assigns this course to your student profile and unlocks <span class="font-bold text-slate-800">ALL lectures, materials, and quizzes</span>.
-      </p>
-      <div class="mt-6 space-y-2">
-        <button onclick="confirmEnrollment()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow flex items-center justify-center gap-2 transition">
-          <span>✓</span> Confirm Enrollment
-        </button>
-        <button onclick="togglePaymentModal(false)" class="w-full py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition">
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- SCRIPT LOADERS (All files in root, zero subfolders) -->
+  <!-- SCRIPT LOADERS (All in the same root folder, zero subfolders) -->
   <script src="policies-data.js"></script>
-  <script src="courses-data.js"></script>
+  <script src="course-data.js"></script>
   <script src="player.js"></script>
   <script src="app.js"></script>
 </body>
