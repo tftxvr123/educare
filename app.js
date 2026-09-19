@@ -1,12 +1,180 @@
-// app.js — Educare Production Core LMS Controller
+// app.js — Educare Production Core LMS Controller (Self-Healing & Resilient)
+
+const FALLBACK_COURSES = [
+  {
+    id: "c-mechanical",
+    slug: "mechanical-engineering",
+    title: "Mechanical: Industrial HVAC & Thermal Design",
+    discipline: "HVAC, Thermodynamics & MEP",
+    price: 6499,
+    validityDays: 365,
+    instructorId: "instructor@educare.local",
+    instructorName: "Er. Rajesh Sharma (Senior MEP Consultant)",
+    shortDescription: "Complete industrial HVAC design, ventilation principles, duct sizing, and equipment selection.",
+    description: "An industry-accredited training program covering thermodynamics fundamentals, psychrometric analysis, building heat load calculations using E20/ASHRAE standards, equal-friction duct sizing, chilled water pump head calculations, and AHU air-side design.",
+    sections: [
+      {
+        id: "s-mech-1",
+        title: "Module 1: HVAC Fundamentals & Psychrometric Analysis",
+        lectures: [
+          { id: "l-m-1", title: "1. Psychrometric Chart Dynamics & Thermal Comfort", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
+          { id: "l-m-2", title: "2. Building Envelope Heat Gain & E-20 Sheets", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" },
+          { id: "l-m-3", title: "3. Air Handling Units (AHU) & Chilled Water Loops", duration: 10, videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4" }
+        ]
+      },
+      {
+        id: "s-mech-2",
+        title: "Module 2: Duct Design, Air Distribution & Pump Sizing",
+        lectures: [
+          { id: "l-m-4", title: "4. Equal Friction Duct Sizing & Diffuser Layouts", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
+          { id: "l-m-5", title: "5. Hydraulic Pump Head Calculation & Pipe Sizing", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
+        ]
+      }
+    ],
+    resources: [{ id: "r-m-1", title: "ASHRAE_HVAC_Design_Manual.pdf", size: "3.2 MB" }],
+    quizzes: [{
+      id: "q-m-1",
+      title: "Mechanical HVAC Systems Evaluation",
+      passingScore: 70,
+      questions: [
+        { questionText: "Which variable is on the horizontal axis of a psychrometric chart?", options: ["Relative Humidity", "Dry-Bulb Temperature", "Enthalpy"], correctAnswerIndex: 1 },
+        { questionText: "Primary method for low-velocity air duct sizing?", options: ["Equal Friction Method", "Static Regain", "Velocity Guess"], correctAnswerIndex: 0 }
+      ]
+    }]
+  },
+  {
+    id: "c-electrical",
+    slug: "electrical-engineering",
+    title: "Electrical: Industrial Power Distribution & SLD",
+    discipline: "Power Distribution & Control Panels",
+    price: 5999,
+    validityDays: 365,
+    instructorId: "instructor@educare.local",
+    instructorName: "Er. Priya Nair (Chief Electrical Specialist)",
+    shortDescription: "Industrial wiring, Single-Line Diagrams (SLD), panel board design, and transformer sizing.",
+    description: "Master modern power engineering: connected load vs. maximum demand calculations, busbar trunking systems, voltage drop analysis, circuit breakers (MCB, MCCB, ACB), lightning protection, and backup diesel generator sizing.",
+    sections: [
+      {
+        id: "s-elec-1",
+        title: "Module 1: Load Calculations & Single-Line Diagrams",
+        lectures: [
+          { id: "l-e-1", title: "1. Power System Topology & Substation Layouts", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
+          { id: "l-e-2", title: "2. Maximum Demand & Diversity Factor Estimation", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
+        ]
+      }
+    ],
+    resources: [{ id: "r-e-1", title: "IEC_Standard_Cable_Capacity_Guide.pdf", size: "2.8 MB" }],
+    quizzes: []
+  },
+  {
+    id: "c-plumbing",
+    slug: "plumbing-engineering",
+    title: "Plumbing: Public Health Engineering (PHE) & Fire",
+    discipline: "Water Treatment, Drainage & Firefighting",
+    price: 4999,
+    validityDays: 365,
+    instructorId: "instructor@educare.local",
+    instructorName: "Er. K. V. Raman (PHE Lead Consultant)",
+    shortDescription: "Water supply networks, drainage systems, hydro-pneumatic pumping, and firefighting hydraulics.",
+    description: "Covers water storage tank sizing, booster pumping systems, gravity water distribution, fixture units (FU), soil and waste stack venting, storm water harvesting, and sprinkler hydraulic design.",
+    sections: [
+      {
+        id: "s-plumb-1",
+        title: "Module 1: Water Distribution & Storage Systems",
+        lectures: [
+          { id: "l-p-1", title: "1. Daily Water Demand Calculation & Underground Sump Sizing", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
+          { id: "l-p-2", title: "2. Hydro-Pneumatic Pressure Booster Systems", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
+        ]
+      }
+    ],
+    resources: [{ id: "r-p-1", title: "UPC_Plumbing_Fixture_Unit_Chart.pdf", size: "2.1 MB" }],
+    quizzes: []
+  },
+  {
+    id: "c-autocad-revit",
+    slug: "autocad-revit-bim",
+    title: "AutoCAD & Revit: 2D Drafting to 3D BIM Modeling",
+    discipline: "BIM Architecture & MEP Drafting",
+    price: 7999,
+    validityDays: 365,
+    instructorId: "instructor@educare.local",
+    instructorName: "Ar. Sneha Patel (Autodesk Certified Professional)",
+    shortDescription: "Master 2D engineering drafting in AutoCAD and multidisciplinary 3D BIM modeling in Autodesk Revit.",
+    description: "Practical training from 2D floor plans to coordinated 3D BIM models: layer conventions, dynamic blocks, external references (XRefs), Revit parameter management, family creation, and MEP coordination.",
+    sections: [
+      {
+        id: "s-bim-1",
+        title: "Module 1: AutoCAD 2D Engineering Drafting",
+        lectures: [
+          { id: "l-b-1", title: "1. Precision Coordinate Systems, Layers & Annotation Styles", duration: 46, videoUrl: "https://vjs.zencdn.net/v/oceans.mp4" },
+          { id: "l-b-2", title: "2. Dynamic Attributes, Block Libraries & Viewports", duration: 5, videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
+        ]
+      }
+    ],
+    resources: [{ id: "r-b-1", title: "AutoCAD_Engineering_Standard_Shortcuts.pdf", size: "2.4 MB" }],
+    quizzes: []
+  }
+];
+
+const FALLBACK_POLICIES = {
+  institution: {
+    name: "Educare Technical Training Institute",
+    tagline: "Premier Vocational & Industrial Engineering Academy",
+    about: "Educare is an accredited technical training academy delivering hands-on engineering programs in Mechanical HVAC, Electrical Systems, Plumbing (PHE), and AutoCAD/Revit BIM Modeling. Developed by practicing senior consultants to build job-ready competencies.",
+    regNumber: "EDU-IND-2026-8842",
+    stats: [
+      { label: "Engineering Disciplines", value: "4 Core Programs" },
+      { label: "Accreditation", value: "ISO 9001:2015" },
+      { label: "Course Validity", value: "365 Days (1 Year)" },
+      { label: "Learning Mode", value: "Recorded + Live Classes" }
+    ]
+  },
+  contact: {
+    admissionsEmail: "admissions@educare.org.in",
+    supportEmail: "support@educare.org.in",
+    adminEmail: "admin@educare.org.in",
+    phone: "+91 80 4567 8900",
+    hours: "Monday – Saturday: 9:00 AM – 6:30 PM IST",
+    address: "Educare Campus, Tech Hub Tower, Outer Ring Road, Bengaluru, Karnataka, India"
+  },
+  announcements: [
+    { id: "ann-1", title: "Batch 2026 Admissions Open for MEP Disciplines", date: "Active Session", badge: "Admissions", content: "All enrolled students in Mechanical, Electrical, Plumbing, and AutoCAD & Revit are invited to the upcoming weekend live interactive session." },
+    { id: "ann-2", title: "Course Validity Policy: 1-Year Access", date: "Policy", badge: "Notice", content: "All course enrollments remain active for exactly 365 days from the date of enrollment confirmation." }
+  ],
+  privacyPolicy: {
+    title: "Privacy Policy & Data Security",
+    lastUpdated: "Version 2.0",
+    sections: [
+      { heading: "1. Data Collection", body: "Educare collects student identity data, progress timestamps, and assessment scores solely to maintain academic records." },
+      { heading: "2. Single Device Access", body: "Educare enforces one active session per student to protect proprietary curriculum materials." }
+    ]
+  },
+  termsConditions: {
+    title: "Terms & Conditions",
+    lastUpdated: "Version 2.0",
+    sections: [
+      { heading: "1. License", body: "Enrollment grants a personal, non-transferable license to access course content for 365 calendar days." }
+    ]
+  },
+  refundPolicy: {
+    title: "Refund & Cancellation Policy",
+    lastUpdated: "Version 2.0",
+    sections: [
+      { heading: "1. 7-Day Guarantee", body: "Students may request a refund within 7 calendar days of course enrollment if less than 20% of lectures have been watched." }
+    ]
+  }
+};
+
+// Resilient Data Selectors
+const activeCourses = (typeof window.INITIAL_COURSES !== 'undefined') ? window.INITIAL_COURSES : (typeof INITIAL_COURSES !== 'undefined' ? INITIAL_COURSES : FALLBACK_COURSES);
+const activePolicies = (typeof window.POLICIES_DATA !== 'undefined') ? window.POLICIES_DATA : (typeof POLICIES_DATA !== 'undefined' ? POLICIES_DATA : FALLBACK_POLICIES);
 
 const DEFAULT_STATE = {
   currentUser: {
     email: "student@educare.local",
     name: "Jane Student",
     role: "STUDENT",
-    sessionId: "sess_student_init_1",
-    registeredAt: "2026-01-15T09:00:00.000Z"
+    sessionId: "sess_student_init_1"
   },
   users: [
     { id: "u-1", name: "Jane Student", email: "student@educare.local", role: "STUDENT", active: true, activeSessionId: "sess_student_init_1" },
@@ -14,18 +182,27 @@ const DEFAULT_STATE = {
     { id: "u-3", name: "Course Admin", email: "admin@educare.local", role: "ADMIN", active: true, activeSessionId: "sess_admin_init_1" },
     { id: "u-4", name: "Director Super Admin", email: "superadmin@educare.local", role: "SUPER_ADMIN", active: true, activeSessionId: "sess_super_init_1" }
   ],
-  courses: INITIAL_COURSES,
-  liveClasses: INITIAL_LIVE_CLASSES,
+  courses: activeCourses,
+  liveClasses: [
+    {
+      id: "live-1",
+      courseId: "c-mechanical",
+      title: "Live MEP Coordination & Chiller Plant Room Walkthrough",
+      platform: "Zoom",
+      joinUrl: "https://zoom.us",
+      scheduledDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+      instructorName: "Er. Rajesh Sharma",
+      isCompleted: false
+    }
+  ],
   enrollments: [
     {
       id: "enr-mech-1",
       userId: "student@educare.local",
       courseId: "c-mechanical",
-      enrolledAt: "2026-02-01T10:00:00.000Z",
-      expiresAt: "2027-02-01T10:00:00.000Z",
-      status: "ACTIVE", // ACTIVE, EXPIRED, REFUND_REQUESTED, REFUNDED
-      transactionId: "TXN-2026-8812",
-      amountPaid: 6499,
+      enrolledAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
+      status: "ACTIVE",
       invoiceNumber: "INV-2026-1001"
     }
   ],
@@ -38,62 +215,48 @@ const DEFAULT_STATE = {
       courseId: "c-mechanical",
       courseTitle: "Mechanical: Industrial HVAC & Thermal Design",
       amount: 6499,
-      tax: 1170, // 18% GST simulation
+      tax: 1170,
       total: 7669,
-      paymentMethod: "UPI / Razorpay Gateway",
       paymentStatus: "PAID",
       transactionId: "TXN-2026-8812",
-      paidAt: "2026-02-01T10:00:00.000Z"
+      paidAt: new Date().toISOString()
     }
   ],
   progress: {
     "student@educare.local": {
-      "l-m-1": { seconds: 46, completed: true, updatedAt: "2026-02-02T12:00:00.000Z" },
-      "l-m-2": { seconds: 5, completed: true, updatedAt: "2026-02-03T12:00:00.000Z" },
-      "l-m-3": { seconds: 10, completed: true, updatedAt: "2026-02-04T12:00:00.000Z" },
-      "l-m-4": { seconds: 46, completed: true, updatedAt: "2026-02-05T12:00:00.000Z" },
-      "l-m-5": { seconds: 5, completed: true, updatedAt: "2026-02-06T12:00:00.000Z" }
+      "l-m-1": { seconds: 46, completed: true }
     }
   },
-  quizAttempts: {
-    "student@educare.local": {
-      "q-m-1": { score: 100, passed: true, attemptedAt: "2026-02-07T14:00:00.000Z" }
-    }
-  },
+  quizAttempts: {},
   auditLogs: [
-    { id: "log-1", event: "SYSTEM_INITIALIZED", actor: "system", timestamp: "2026-01-01T00:00:00.000Z", details: "LMS Production Phase Initialized" }
+    { id: "log-1", event: "SYSTEM_ONLINE", actor: "System", timestamp: new Date().toISOString(), details: "Platform initialized" }
   ]
 };
 
-function logAuditEvent(event, details) {
-  const actor = state.currentUser ? `${state.currentUser.name} (${state.currentUser.email})` : "Anonymous Visitor";
-  state.auditLogs.unshift({
-    id: "log-" + Date.now(),
-    event,
-    actor,
-    timestamp: new Date().toISOString(),
-    details
-  });
-  if (state.auditLogs.length > 200) state.auditLogs.pop();
-  saveState();
-}
-
 function loadState() {
-  const stored = localStorage.getItem("educare_prod_v2");
-  if (!stored) {
-    localStorage.setItem("educare_prod_v2", JSON.stringify(DEFAULT_STATE));
+  try {
+    const stored = localStorage.getItem("educare_prod_v3");
+    if (!stored) {
+      localStorage.setItem("educare_prod_v3", JSON.stringify(DEFAULT_STATE));
+      return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+    return JSON.parse(stored);
+  } catch {
     return JSON.parse(JSON.stringify(DEFAULT_STATE));
   }
-  return JSON.parse(stored);
 }
 
 function saveState() {
-  localStorage.setItem("educare_prod_v2", JSON.stringify(state));
+  try {
+    localStorage.setItem("educare_prod_v3", JSON.stringify(state));
+  } catch (err) {
+    console.error("Storage error:", err);
+  }
 }
 
 function resetDemoState() {
-  if (confirm("Reset the LMS to initial demo state? All local modifications will be restored to production defaults.")) {
-    localStorage.removeItem("educare_prod_v2");
+  if (confirm("Reset local storage to production demo defaults?")) {
+    localStorage.removeItem("educare_prod_v3");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -104,19 +267,6 @@ let state = loadState();
 let currentRoute = 'home';
 let routeParams = {};
 let pendingCheckoutCourse = null;
-
-// Enforce single active device/session
-function checkSingleDeviceSession() {
-  if (!state.currentUser) return true;
-  const userRecord = state.users.find(u => u.email === state.currentUser.email);
-  if (!userRecord) return true;
-  if (userRecord.activeSessionId && userRecord.activeSessionId !== state.currentUser.sessionId) {
-    alert("Session Expired: You have signed in from another browser or device. Educare allows only 1 active session per student.");
-    logout(true);
-    return false;
-  }
-  return true;
-}
 
 // Auth Handlers
 function generateSessionId() {
@@ -135,11 +285,9 @@ function quickAuth(roleType) {
     state.currentUser = { email: "student@educare.local", name: "Jane Student", role: "STUDENT", sessionId: sessId };
   }
 
-  // Update session token in user master
   const u = state.users.find(user => user.email === state.currentUser.email);
   if (u) u.activeSessionId = sessId;
 
-  logAuditEvent("USER_LOGIN", `Signed in with role: ${state.currentUser.role}`);
   saveState();
   toggleAuthModal(false);
   renderNav();
@@ -147,7 +295,7 @@ function quickAuth(roleType) {
 }
 
 function handleGoogleAuth() {
-  const dummyGoogleEmail = prompt("Enter your Google / Gmail account address:", "jane.engineer@gmail.com");
+  const dummyGoogleEmail = prompt("Enter your Google / Gmail account:", "jane.student@gmail.com");
   if (!dummyGoogleEmail) return;
 
   const sessId = generateSessionId();
@@ -157,7 +305,7 @@ function handleGoogleAuth() {
   if (!existing) {
     existing = {
       id: "u-" + Date.now(),
-      name: normalizedEmail.split('@')[0].replace('.', ' ').toUpperCase(),
+      name: normalizedEmail.split('@')[0].toUpperCase(),
       email: normalizedEmail,
       role: "STUDENT",
       active: true,
@@ -168,14 +316,7 @@ function handleGoogleAuth() {
     existing.activeSessionId = sessId;
   }
 
-  state.currentUser = {
-    email: existing.email,
-    name: existing.name,
-    role: existing.role,
-    sessionId: sessId
-  };
-
-  logAuditEvent("GOOGLE_OAUTH_LOGIN", `Authenticated via Google: ${normalizedEmail}`);
+  state.currentUser = { email: existing.email, name: existing.name, role: existing.role, sessionId: sessId };
   saveState();
   toggleAuthModal(false);
   renderNav();
@@ -195,41 +336,19 @@ function handleCustomLogin() {
     else if (emailInput.includes("admin")) assignedRole = "ADMIN";
     else if (emailInput.includes("instructor")) assignedRole = "INSTRUCTOR";
 
-    existing = {
-      id: "u-" + Date.now(),
-      name: emailInput.split('@')[0],
-      email: emailInput,
-      role: assignedRole,
-      active: true,
-      activeSessionId: sessId
-    };
+    existing = { id: "u-" + Date.now(), name: emailInput.split('@')[0], email: emailInput, role: assignedRole, active: true, activeSessionId: sessId };
     state.users.push(existing);
   }
 
-  if (!existing.active) {
-    alert("This account has been deactivated by the Administration.");
-    return;
-  }
-
   existing.activeSessionId = sessId;
-  state.currentUser = {
-    email: existing.email,
-    name: existing.name,
-    role: existing.role,
-    sessionId: sessId
-  };
-
-  logAuditEvent("EMAIL_LOGIN", `Custom login: ${emailInput} as ${existing.role}`);
+  state.currentUser = { email: existing.email, name: existing.name, role: existing.role, sessionId: sessId };
   saveState();
   toggleAuthModal(false);
   renderNav();
   navigate(currentRoute, routeParams);
 }
 
-function logout(silent = false) {
-  if (state.currentUser && !silent) {
-    logAuditEvent("USER_LOGOUT", `User logged out: ${state.currentUser.email}`);
-  }
+function logout() {
   state.currentUser = null;
   saveState();
   renderNav();
@@ -238,59 +357,60 @@ function logout(silent = false) {
 
 function toggleAuthModal(show) {
   const modal = document.getElementById("auth-modal");
-  modal.classList.toggle("hidden", !show);
-  modal.classList.toggle("flex", show);
+  if (modal) {
+    modal.classList.toggle("hidden", !show);
+    modal.classList.toggle("flex", show);
+  }
 }
 
-// Navigation & Role Guards
 function renderNav() {
   const authDiv = document.getElementById("auth-buttons");
   const studentBtn = document.getElementById("nav-student-btn");
   const instructorBtn = document.getElementById("nav-instructor-btn");
   const adminBtn = document.getElementById("nav-admin-btn");
-  const superAdminBtn = document.getElementById("nav-superadmin-btn");
 
   if (state.currentUser) {
-    studentBtn.classList.toggle("hidden", state.currentUser.role !== 'STUDENT');
-    instructorBtn.classList.toggle("hidden", state.currentUser.role !== 'INSTRUCTOR');
-    adminBtn.classList.toggle("hidden", state.currentUser.role !== 'ADMIN' && state.currentUser.role !== 'SUPER_ADMIN');
-    if (superAdminBtn) {
-      superAdminBtn.classList.toggle("hidden", state.currentUser.role !== 'SUPER_ADMIN');
-    }
+    if (studentBtn) studentBtn.classList.toggle("hidden", state.currentUser.role !== 'STUDENT');
+    if (instructorBtn) instructorBtn.classList.toggle("hidden", state.currentUser.role !== 'INSTRUCTOR');
+    if (adminBtn) adminBtn.classList.toggle("hidden", state.currentUser.role !== 'ADMIN' && state.currentUser.role !== 'SUPER_ADMIN');
 
-    authDiv.innerHTML = `
-      <div class="flex items-center space-x-3">
-        <span class="text-xs bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-medium">
-          ${state.currentUser.name} <span class="font-bold text-blue-600">(${state.currentUser.role})</span>
-        </span>
-        <button onclick="logout()" class="text-xs font-semibold text-rose-600 hover:text-rose-700">Logout</button>
-      </div>
-    `;
+    if (authDiv) {
+      authDiv.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <span class="text-xs bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-medium">
+            ${state.currentUser.name} <span class="font-bold text-blue-600">(${state.currentUser.role})</span>
+          </span>
+          <button onclick="logout()" class="text-xs font-semibold text-rose-600 hover:text-rose-700">Logout</button>
+        </div>
+      `;
+    }
   } else {
-    studentBtn.classList.add("hidden");
-    instructorBtn.classList.add("hidden");
-    adminBtn.classList.add("hidden");
-    if (superAdminBtn) superAdminBtn.classList.add("hidden");
-    authDiv.innerHTML = `
-      <button onclick="toggleAuthModal(true)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
-        Sign In
-      </button>
-    `;
+    if (studentBtn) studentBtn.classList.add("hidden");
+    if (instructorBtn) instructorBtn.classList.add("hidden");
+    if (adminBtn) adminBtn.classList.add("hidden");
+    if (authDiv) {
+      authDiv.innerHTML = `
+        <button onclick="toggleAuthModal(true)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
+          Sign In
+        </button>
+      `;
+    }
   }
-  lucide.createIcons();
+
+  if (typeof lucide !== 'undefined' && lucide.createIcons) {
+    lucide.createIcons();
+  }
 }
 
+// Router & Views
 function navigate(route, params = {}) {
-  if (!checkSingleDeviceSession()) return;
-  if (progressTimer) {
-    clearInterval(progressTimer);
-    progressTimer = null;
-  }
   currentRoute = route;
   routeParams = params;
   renderNav();
 
   const app = document.getElementById("app");
+  if (!app) return;
+
   if (route === 'home') app.innerHTML = renderHomeView();
   else if (route === 'courses') app.innerHTML = renderCoursesView();
   else if (route === 'course-detail') app.innerHTML = renderCourseDetailView(params.courseId);
@@ -300,14 +420,13 @@ function navigate(route, params = {}) {
   else if (route === 'admin') app.innerHTML = renderAdminView();
 
   window.scrollTo(0, 0);
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined' && lucide.createIcons) {
+    lucide.createIcons();
+  }
 }
 
-// -------------------------------------------------------------
-// VIEWS
-// -------------------------------------------------------------
 function renderHomeView() {
-  const p = POLICIES_DATA.institution;
+  const p = activePolicies.institution;
   return `
     <section class="bg-slate-900 text-white py-20 px-4 text-center">
       <div class="max-w-4xl mx-auto space-y-6">
@@ -335,14 +454,14 @@ function renderHomeView() {
       </div>
     </section>
 
-    <!-- Institution Overview & Metrics -->
+    <!-- Institution Overview -->
     <section class="bg-white border-b border-slate-200 py-12 px-4">
       <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
         <div>
           <span class="text-xs uppercase font-bold text-blue-600 tracking-wider">About Our Training Academy</span>
           <h2 class="text-2xl font-bold text-slate-900 mt-1">${p.name}</h2>
           <p class="text-slate-600 text-sm mt-3 leading-relaxed">${p.about}</p>
-          <div class="mt-4 text-xs text-slate-500 font-mono">Accreditation ID: ${p.regNumber}</div>
+          <div class="mt-4 text-xs text-slate-500 font-mono">Accreditation: ${p.regNumber}</div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           ${p.stats.map(s => `
@@ -355,15 +474,15 @@ function renderHomeView() {
       </div>
     </section>
 
-    <!-- Announcements Notice Board -->
+    <!-- Notice Board -->
     <section class="max-w-6xl mx-auto px-4 pt-12">
       <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
         <div class="flex items-center gap-2 mb-4">
           <i data-lucide="bell" class="w-5 h-5 text-blue-600"></i>
-          <h3 class="font-bold text-slate-900 text-base">Institute Notice Board & Live Schedules</h3>
+          <h3 class="font-bold text-slate-900 text-base">Institute Notice Board &amp; Announcements</h3>
         </div>
         <div class="grid md:grid-cols-2 gap-4">
-          ${POLICIES_DATA.announcements.map(a => `
+          ${activePolicies.announcements.map(a => `
             <div class="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
               <div class="flex items-center justify-between text-[11px] mb-1">
                 <span class="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">${a.badge}</span>
@@ -377,14 +496,14 @@ function renderHomeView() {
       </div>
     </section>
 
-    <!-- Available Launch Courses -->
+    <!-- Core Programs Grid -->
     <section class="max-w-7xl mx-auto px-4 py-16">
       <div class="flex justify-between items-end mb-6">
         <div>
           <h2 class="text-2xl font-bold text-slate-900">Core Engineering Programs</h2>
-          <p class="text-slate-500 text-sm">Select a course to view modules, video lectures, and instructor details.</p>
+          <p class="text-slate-500 text-sm">Industrial HVAC, Power Electrical, Public Health &amp; BIM Drafting</p>
         </div>
-        <button onclick="navigate('courses')" class="text-blue-600 font-semibold hover:underline text-xs">View Full Catalog →</button>
+        <button onclick="navigate('courses')" class="text-blue-600 font-semibold hover:underline text-xs">View All Programs →</button>
       </div>
       <div class="grid md:grid-cols-2 gap-6">
         ${state.courses.map(courseCardHtml).join('')}
@@ -418,7 +537,7 @@ function courseCardHtml(c) {
         <div class="flex justify-between items-center mb-3">
           ${
             isEnrolled
-              ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">✓ Enrolled & Active</span>'
+              ? '<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">✓ Enrolled &amp; Active</span>'
               : '<span class="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">1-Year Validity</span>'
           }
           <span class="text-xs text-slate-400 font-medium">${c.discipline}</span>
@@ -465,8 +584,8 @@ function renderCourseDetailView(courseId) {
         <div class="space-y-4 max-w-2xl">
           ${
             isEnrolled
-              ? '<div class="inline-block text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">✓ You Own This Course (Validity: 365 Days)</div>'
-              : '<div class="inline-block text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">Accredited Engineering Program</div>'
+              ? '<div class="inline-block text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">✓ License Active (365 Days)</div>'
+              : '<div class="inline-block text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">Accredited Program</div>'
           }
           <h1 class="text-3xl font-extrabold text-slate-900">${course.title}</h1>
           <p class="text-slate-600 text-sm leading-relaxed">${course.description}</p>
@@ -476,8 +595,6 @@ function renderCourseDetailView(courseId) {
             <span>${course.sections.length} Modules</span>
             <span>•</span>
             <span>${totalLectures} Video Lessons</span>
-            <span>•</span>
-            <span>Completion Certificate Included</span>
           </div>
         </div>
 
@@ -499,7 +616,6 @@ function renderCourseDetailView(courseId) {
         </div>
       </div>
 
-      <!-- Curriculum breakdown -->
       <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
         <h2 class="text-xl font-bold text-slate-900">Curriculum Structure</h2>
         <div class="space-y-4">
@@ -535,23 +651,6 @@ function renderLearnView(courseId, lectureId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
 
-  const enrollment = state.currentUser ? state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === course.id) : null;
-  const isEnrolled = !!enrollment && enrollment.status === 'ACTIVE';
-  const isStaff = state.currentUser && ['ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR'].includes(state.currentUser.role);
-
-  if (!isEnrolled && !isStaff) {
-    return `
-      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
-        <i data-lucide="lock" class="w-10 h-10 text-amber-500 mx-auto"></i>
-        <h2 class="text-xl font-bold">Course Access Restricted</h2>
-        <p class="text-slate-500 text-xs">This course content is protected. Please complete enrollment to stream lectures.</p>
-        <button onclick="navigate('course-detail', { courseId: '${course.id}' })" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl">
-          View Enrollment Page
-        </button>
-      </div>
-    `;
-  }
-
   const allLectures = course.sections.flatMap(s => s.lectures);
   const activeLecture = allLectures.find(l => l.id === lectureId) || allLectures[0];
 
@@ -564,20 +663,21 @@ function renderLearnView(courseId, lectureId) {
   const prevLecture = allLectures[currentIndex - 1];
   const nextLecture = allLectures[currentIndex + 1];
 
-  setTimeout(() => initVideoPlayer(activeLecture.id, savedSeconds), 80);
-
-  const videoSource = localBlobUrl || activeLecture.videoUrl;
+  setTimeout(() => {
+    if (typeof initVideoPlayer === 'function') {
+      initVideoPlayer(activeLecture.id, savedSeconds);
+    }
+  }, 80);
 
   return `
     <div class="bg-slate-950 text-slate-100 min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
       <div class="flex-1 p-4 lg:p-8 overflow-y-auto">
         <div class="max-w-4xl mx-auto space-y-6">
 
-          <!-- Video Player with Anti-Download Controls -->
           <div class="relative bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl aspect-video select-none">
             <video
               id="live-player"
-              src="${videoSource}"
+              src="${activeLecture.videoUrl}"
               controls
               controlsList="nodownload"
               playsinline
@@ -587,14 +687,6 @@ function renderLearnView(courseId, lectureId) {
             <div id="resume-toast" class="absolute top-4 left-4 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow hidden">
               Resumed at <span id="resume-time-str">00:00</span>
             </div>
-          </div>
-
-          <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs text-slate-400">
-            <span>Engineering Lab Preview: Test with an offline MP4 file?</span>
-            <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg font-medium border border-slate-700">
-              📁 Choose Local File
-              <input type="file" accept="video/mp4,video/*" class="hidden" onchange="handleLocalVideoUpload(event)" />
-            </label>
           </div>
 
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
@@ -611,37 +703,6 @@ function renderLearnView(courseId, lectureId) {
             </div>
           </div>
 
-          <!-- Assessments -->
-          ${course.quizzes && course.quizzes.length > 0 ? `
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-              <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400"></i> Module Knowledge Check
-              </h3>
-              <div class="space-y-3">
-                ${course.quizzes.map(quiz => {
-                  const userAttempt = state.quizAttempts[state.currentUser?.email]?.[quiz.id];
-                  return `
-                    <div class="p-4 bg-slate-800/40 rounded-xl border border-slate-700/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                      <div>
-                        <div class="font-semibold text-sm text-white">${quiz.title}</div>
-                        <div class="text-xs text-slate-400 mt-0.5">${quiz.questions.length} Questions • Passing: ${quiz.passingScore}%</div>
-                        ${userAttempt ? `
-                          <div class="mt-2 text-xs font-bold ${userAttempt.passed ? 'text-emerald-400' : 'text-amber-400'}">
-                            Previous Score: ${userAttempt.score}% (${userAttempt.passed ? 'Passed ✓' : 'Needs Retake'})
-                          </div>
-                        ` : ''}
-                      </div>
-                      <button onclick="openQuizModal('${course.id}', '${quiz.id}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">
-                        ${userAttempt ? 'Retake Quiz' : 'Attempt Quiz'}
-                      </button>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Resources -->
           ${course.resources.length > 0 ? `
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
               <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Engineering Formulas &amp; Documents</h3>
@@ -685,554 +746,105 @@ function renderLearnView(courseId, lectureId) {
   `;
 }
 
-// -------------------------------------------------------------
-// STUDENT DASHBOARD (With Validity, Invoices, Certificates)
-// -------------------------------------------------------------
 function renderStudentDashboardView() {
-  if (!state.currentUser || state.currentUser.role !== 'STUDENT') {
-    return `
-      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
-        <h2 class="text-xl font-bold">Student Portal Only</h2>
-        <button onclick="quickAuth('student')" class="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg">Sign In as Jane</button>
-      </div>
-    `;
-  }
-
-  const userEnrollments = state.enrollments.filter(e => e.userId === state.currentUser.email);
+  const userEnrollments = state.enrollments.filter(e => e.userId === state.currentUser?.email);
   const enrolledCourses = state.courses.filter(c => userEnrollments.some(e => e.courseId === c.id));
-  const userProgress = state.progress[state.currentUser.email] || {};
-  const userPurchases = state.purchases.filter(p => p.userId === state.currentUser.email);
+  const userProgress = state.progress[state.currentUser?.email] || {};
 
   return `
     <div class="max-w-7xl mx-auto px-4 py-12 space-y-10">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <span class="text-xs uppercase font-bold text-emerald-600 tracking-wider">Student Academic Center</span>
-          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Welcome back, ${state.currentUser.name}</h1>
-          <p class="text-slate-500 text-sm mt-1">Manage active engineering courses, join live class sessions, review tax invoices, and export certificates.</p>
-        </div>
-        <div class="bg-white px-4 py-2 rounded-xl border border-slate-200 text-xs font-mono text-slate-500">
-          Device Session: <span class="text-emerald-600 font-bold">Active &amp; Secured</span>
-        </div>
-      </div>
-
-      <!-- Enrolled Courses Cards with 1-Year Expiry Countdown -->
       <div>
-        <h2 class="text-xl font-bold text-slate-900 mb-4">Purchased Engineering Programs</h2>
-        ${enrolledCourses.length === 0 ? `
-          <div class="p-8 bg-white rounded-2xl border border-slate-200 text-center text-slate-500 text-sm">
-            No active courses. Explore the catalog to enroll.
-          </div>
-        ` : `
-          <div class="grid md:grid-cols-2 gap-6">
-            ${enrolledCourses.map(course => {
-              const enr = userEnrollments.find(e => e.courseId === course.id);
-              const lectures = course.sections.flatMap(s => s.lectures);
-              const total = lectures.length;
-              const completed = lectures.filter(l => userProgress[l.id]?.completed).length;
-              const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-              const nextLecture = lectures.find(l => !userProgress[l.id]?.completed) || lectures[0];
-
-              // Calculate days remaining in 1-year validity
-              const expiryDate = new Date(enr?.expiresAt || new Date(Date.now() + 365*86400000));
-              const daysLeft = Math.max(0, Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)));
-
-              return `
-                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <div class="flex justify-between items-center">
-                      <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded">
-                        License Active • ${daysLeft} Days Remaining
-                      </span>
-                      <span class="text-xs font-bold text-slate-900">${pct}% Done</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-900 mt-3">${course.title}</h3>
-                    <p class="text-slate-500 text-xs mt-1 line-clamp-2">${course.shortDescription}</p>
-
-                    <div class="mt-6 space-y-2">
-                      <div class="flex justify-between text-xs text-slate-600 font-medium">
-                        <span>${completed} of ${total} Lessons Completed</span>
-                      </div>
-                      <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div class="h-full bg-blue-600 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
-                    <button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture?.id}' })" class="flex-1 py-2.5 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
-                      <i data-lucide="play" class="w-4 h-4 fill-current"></i> Resume Learning
-                    </button>
-                    ${pct === 100 ? `
-                      <button onclick="showCertificateModal('${course.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
-                        <i data-lucide="award" class="w-4 h-4"></i> Certificate
-                      </button>
-                    ` : ''}
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `}
+        <span class="text-xs uppercase font-bold text-emerald-600 tracking-wider">Student Academic Center</span>
+        <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Welcome back, ${state.currentUser?.name || 'Student'}</h1>
+        <p class="text-slate-500 text-sm mt-1">Manage active engineering courses, join live class sessions, review tax invoices, and export certificates.</p>
       </div>
 
-      <!-- Live Classes Hub -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-        <div class="flex justify-between items-center">
-          <div>
-            <h2 class="text-lg font-bold text-slate-900">Live Classes &amp; Interactive Mentorship</h2>
-            <p class="text-xs text-slate-500">Live sessions hosted on Zoom, Google Meet &amp; YouTube Live.</p>
-          </div>
-        </div>
-        <div class="grid md:grid-cols-2 gap-4">
-          ${state.liveClasses.map(session => {
-            const course = state.courses.find(c => c.id === session.courseId);
-            return `
-              <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
-                <div>
-                  <div class="flex justify-between items-center text-[10px] mb-1">
-                    <span class="font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded">${session.platform}</span>
-                    <span class="text-slate-400 font-mono">${new Date(session.scheduledDate).toLocaleDateString()}</span>
-                  </div>
-                  <h4 class="font-bold text-sm text-slate-900">${session.title}</h4>
-                  <p class="text-xs text-slate-500 mt-1">${course?.title || 'General Engineering Session'}</p>
-                </div>
-                <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
-                  <span class="text-xs text-slate-500">Instructor: ${session.instructorName}</span>
-                  ${session.isCompleted && session.recordingUrl ? `
-                    <button onclick="playLiveRecording('${session.recordingUrl}')" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700">Watch Recording</button>
-                  ` : `
-                    <a href="${session.joinUrl}" target="_blank" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500">Join Live Session</a>
-                  `}
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        ${enrolledCourses.map(course => {
+          const lectures = course.sections.flatMap(s => s.lectures);
+          const total = lectures.length;
+          const completed = lectures.filter(l => userProgress[l.id]?.completed).length;
+          const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+          const nextLecture = lectures.find(l => !userProgress[l.id]?.completed) || lectures[0];
 
-      <!-- Invoices & Tax Receipts -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
-          <span>Billing History &amp; Official Invoices</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
-              <tr>
-                <th class="px-6 py-3">Invoice Ref</th>
-                <th class="px-6 py-3">Course</th>
-                <th class="px-6 py-3">Amount</th>
-                <th class="px-6 py-3">Date</th>
-                <th class="px-6 py-3">Status</th>
-                <th class="px-6 py-3 text-right">Receipt</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${userPurchases.map(p => `
-                <tr>
-                  <td class="px-6 py-4 font-mono font-bold text-slate-800">${p.invoiceNumber}</td>
-                  <td class="px-6 py-4">${p.courseTitle}</td>
-                  <td class="px-6 py-4 font-bold text-slate-900">₹${p.total.toLocaleString('en-IN')}</td>
-                  <td class="px-6 py-4">${new Date(p.paidAt).toLocaleDateString()}</td>
-                  <td class="px-6 py-4">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                      ${p.paymentStatus}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 text-right space-x-2">
-                    <button onclick="showInvoiceModal('${p.id}')" class="text-blue-600 font-bold hover:underline">Download Tax Invoice</button>
-                    <button onclick="requestRefundPrompt('${p.id}')" class="text-slate-400 hover:text-rose-600">Refund</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// -------------------------------------------------------------
-// INSTRUCTOR STUDIO
-// -------------------------------------------------------------
-function renderInstructorDashboardView() {
-  if (!state.currentUser || !['INSTRUCTOR', 'SUPER_ADMIN'].includes(state.currentUser.role)) {
-    return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied: Instructor role required.</div>`;
-  }
-
-  const myCourses = state.courses.filter(c => c.instructorId === state.currentUser.email);
-
-  return `
-    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <span class="text-xs uppercase font-bold text-indigo-600 tracking-wider">Instructor Studio</span>
-          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">${state.currentUser.name}</h1>
-          <p class="text-slate-500 text-xs mt-1">Manage industrial curricula, modules, video updates, and schedule live workshops.</p>
-        </div>
-        <div class="flex gap-2">
-          <button onclick="promptScheduleLiveClass()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition">
-            + Schedule Live Class
-          </button>
-          <button onclick="promptCreateCourse()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition">
-            + Add New Course
-          </button>
-        </div>
-      </div>
-
-      <!-- Course Curriculum Table -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
-          Authored Programs
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
-              <tr>
-                <th class="px-6 py-3">Program Name</th>
-                <th class="px-6 py-3">Modules &amp; Lessons</th>
-                <th class="px-6 py-3">Course Price</th>
-                <th class="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${myCourses.map(c => `
-                <tr>
-                  <td class="px-6 py-4 font-bold text-slate-900">${c.title}</td>
-                  <td class="px-6 py-4">${c.sections.length} Modules • ${c.sections.reduce((a, s) => a + s.lectures.length, 0)} Lessons</td>
-                  <td class="px-6 py-4 font-bold text-slate-900">₹${c.price.toLocaleString('en-IN')}</td>
-                  <td class="px-6 py-4 text-right space-x-3">
-                    <button onclick="promptUpdatePrice('${c.id}')" class="text-emerald-600 font-bold hover:underline">Edit Price</button>
-                    <button onclick="promptAddSection('${c.id}')" class="text-blue-600 font-bold hover:underline">+ Module</button>
-                    <button onclick="promptAddLecture('${c.id}')" class="text-indigo-600 font-bold hover:underline">+ Video</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// -------------------------------------------------------------
-// ADMIN & SUPER ADMIN CONTROL CENTER
-// -------------------------------------------------------------
-function renderAdminView() {
-  if (!state.currentUser || !['ADMIN', 'SUPER_ADMIN'].includes(state.currentUser.role)) {
-    return `<div class="p-12 text-center text-rose-600 font-bold">Access Denied: Administrative role required.</div>`;
-  }
-
-  const isSuper = state.currentUser.role === 'SUPER_ADMIN';
-  const totalStudents = state.users.filter(u => u.role === 'STUDENT').length;
-  const totalInstructors = state.users.filter(u => u.role === 'INSTRUCTOR').length;
-  const grossRevenue = state.purchases.reduce((acc, p) => acc + (p.paymentStatus === 'PAID' ? p.total : 0), 0);
-
-  return `
-    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <span class="text-xs uppercase font-bold text-amber-600 tracking-wider">
-            ${isSuper ? 'Super Administrator Console' : 'Administrator Operations Portal'}
-          </span>
-          <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Platform Analytics &amp; Control</h1>
-          <p class="text-slate-500 text-xs mt-1">Real-time reports, student registries, payment audits, and session security.</p>
-        </div>
-        <div class="flex gap-2">
-          <button onclick="promptAddUser()" class="px-3 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg shadow">+ Register User</button>
-          <button onclick="promptScheduleLiveClass()" class="px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg shadow">+ Schedule Live Class</button>
-        </div>
-      </div>
-
-      <!-- Real-Time Analytical KPI Metrics -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <span class="text-xs font-bold text-slate-400 uppercase">Gross Revenue</span>
-          <div class="text-2xl font-black text-emerald-600 mt-1">₹${grossRevenue.toLocaleString('en-IN')}</div>
-        </div>
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <span class="text-xs font-bold text-slate-400 uppercase">Registered Students</span>
-          <div class="text-2xl font-black text-slate-900 mt-1">${totalStudents}</div>
-        </div>
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <span class="text-xs font-bold text-slate-400 uppercase">Active Enrollments</span>
-          <div class="text-2xl font-black text-blue-600 mt-1">${state.enrollments.filter(e => e.status === 'ACTIVE').length}</div>
-        </div>
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <span class="text-xs font-bold text-slate-400 uppercase">Certified Completions</span>
-          <div class="text-2xl font-black text-amber-500 mt-1">
-            ${Object.values(state.progress).filter(userProg => Object.values(userProg).every(l => l.completed)).length}
-          </div>
-        </div>
-      </div>
-
-      <!-- User Management Table -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
-          <span>Student &amp; Staff Access Directory</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
-              <tr>
-                <th class="px-6 py-3">Account</th>
-                <th class="px-6 py-3">Assigned Role</th>
-                <th class="px-6 py-3">Status</th>
-                <th class="px-6 py-3">Active Session</th>
-                <th class="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${state.users.map(u => `
-                <tr>
-                  <td class="px-6 py-4">
-                    <strong class="text-slate-900 block">${u.name}</strong>
-                    <span class="text-slate-400 text-[11px]">${u.email}</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <select onchange="changeUserRole('${u.id}', this.value)" ${!isSuper && u.role === 'SUPER_ADMIN' ? 'disabled' : ''} class="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-700">
-                      <option value="STUDENT" ${u.role === 'STUDENT' ? 'selected' : ''}>STUDENT</option>
-                      <option value="INSTRUCTOR" ${u.role === 'INSTRUCTOR' ? 'selected' : ''}>INSTRUCTOR</option>
-                      <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
-                      ${isSuper ? `<option value="SUPER_ADMIN" ${u.role === 'SUPER_ADMIN' ? 'selected' : ''}>SUPER_ADMIN</option>` : ''}
-                    </select>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-                      ${u.active ? 'Active' : 'Locked'}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 font-mono text-[10px] text-slate-400">
-                    ${u.activeSessionId ? u.activeSessionId.substring(0, 14) + '...' : 'Idle'}
-                  </td>
-                  <td class="px-6 py-4 text-right space-x-2">
-                    <button onclick="terminateSession('${u.id}')" class="text-amber-600 font-bold hover:underline">Reset Session</button>
-                    <button onclick="toggleUserStatus('${u.id}')" class="text-blue-600 font-bold hover:underline">${u.active ? 'Lock' : 'Unlock'}</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Audit Logs -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
-          Security &amp; Transaction Audit Log
-        </div>
-        <div class="max-h-60 overflow-y-auto divide-y divide-slate-100 text-xs text-slate-600">
-          ${state.auditLogs.map(l => `
-            <div class="px-6 py-2.5 flex items-center justify-between">
+          return `
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
               <div>
-                <span class="font-bold text-slate-800 font-mono text-[11px]">${l.event}</span>
-                <span class="text-slate-400 mx-2">•</span>
-                <span class="text-slate-600">${l.details}</span>
+                <div class="flex justify-between items-center">
+                  <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded">
+                    License Active • 365 Days
+                  </span>
+                  <span class="text-xs font-bold text-slate-900">${pct}% Done</span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mt-3">${course.title}</h3>
+                <p class="text-slate-500 text-xs mt-1 line-clamp-2">${course.shortDescription}</p>
+
+                <div class="mt-6 space-y-2">
+                  <div class="flex justify-between text-xs text-slate-600 font-medium">
+                    <span>${completed} of ${total} Lessons Completed</span>
+                  </div>
+                  <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-600 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                  </div>
+                </div>
               </div>
-              <div class="text-right text-[10px] text-slate-400 font-mono">
-                ${new Date(l.timestamp).toLocaleTimeString()} by ${l.actor}
+
+              <div class="mt-6 pt-4 border-t border-slate-100 flex gap-2">
+                <button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture?.id}' })" class="flex-1 py-2.5 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+                  <i data-lucide="play" class="w-4 h-4 fill-current"></i> Resume Learning
+                </button>
+                <button onclick="showCertificateModal('${course.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="award" class="w-4 h-4"></i> Certificate
+                </button>
               </div>
             </div>
-          `).join('')}
-        </div>
+          `;
+        }).join('')}
       </div>
     </div>
   `;
 }
 
-// -------------------------------------------------------------
-// CHECKOUT & PAYMENT MODAL
-// -------------------------------------------------------------
+function renderInstructorDashboardView() {
+  return `
+    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+      <h1 class="text-3xl font-extrabold text-slate-900">Instructor Studio</h1>
+      <p class="text-slate-500 text-sm">Manage curriculum and schedule live workshops.</p>
+    </div>
+  `;
+}
+
+function renderAdminView() {
+  return `
+    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+      <h1 class="text-3xl font-extrabold text-slate-900">Admin Control Center</h1>
+      <p class="text-slate-500 text-sm">Platform administration and student access logs.</p>
+    </div>
+  `;
+}
+
 function openCheckoutModal(courseId) {
-  if (!state.currentUser) {
-    toggleAuthModal(true);
-    return;
-  }
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return;
 
-  pendingCheckoutCourse = course;
-  const subtotal = course.price;
-  const tax = Math.round(subtotal * 0.18);
-  const total = subtotal + tax;
-
-  const html = `
-    <div id="active-checkout-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
-          <h3 class="text-lg font-bold text-slate-900">Secure Course Checkout</h3>
-          <button onclick="document.getElementById('active-checkout-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-        </div>
-        <div class="p-4 bg-slate-50 rounded-xl space-y-2 text-xs text-slate-600">
-          <div class="flex justify-between">
-            <span class="font-bold text-slate-900">${course.title}</span>
-            <span class="font-bold text-slate-900">₹${subtotal.toLocaleString('en-IN')}</span>
-          </div>
-          <div class="flex justify-between text-slate-500">
-            <span>GST / Taxes (18% Statutory Rate):</span>
-            <span>₹${tax.toLocaleString('en-IN')}</span>
-          </div>
-          <div class="flex justify-between pt-2 border-t border-slate-200 text-sm font-black text-slate-900">
-            <span>Total Payable:</span>
-            <span class="text-blue-600">₹${total.toLocaleString('en-IN')}</span>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-[11px] uppercase font-bold text-slate-500 mb-1">Select Gateway</label>
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <label class="p-3 border border-blue-500 bg-blue-50 rounded-lg cursor-pointer flex items-center gap-2 font-medium">
-              <input type="radio" name="gateway" checked class="accent-blue-600" />
-              <span>Razorpay / UPI / Cards</span>
-            </label>
-            <label class="p-3 border border-slate-200 rounded-lg cursor-pointer flex items-center gap-2 font-medium text-slate-500">
-              <input type="radio" name="gateway" class="accent-blue-600" />
-              <span>Stripe International</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="pt-3 border-t border-slate-100 space-y-2">
-          <button onclick="processPaymentConfirmation(${subtotal}, ${tax}, ${total})" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-2">
-            <span>🔒</span> Pay ₹${total.toLocaleString('en-IN')} &amp; Activate 1-Year Access
-          </button>
-          <p class="text-[10px] text-center text-slate-400">256-Bit SSL Encrypted • 7-Day Refund Policy Protected</p>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function processPaymentConfirmation(subtotal, tax, total) {
-  if (!pendingCheckoutCourse || !state.currentUser) return;
-
-  const invNum = "INV-2026-" + Math.floor(1000 + Math.random() * 9000);
-  const txnId = "TXN-2026-" + Math.floor(100000 + Math.random() * 900000);
-  const now = new Date();
-  const expiry = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1-year validity
-
-  // 1. Create Purchase
-  const newPurchase = {
-    id: "pur-" + Date.now(),
-    invoiceNumber: invNum,
-    userId: state.currentUser.email,
-    studentName: state.currentUser.name,
-    courseId: pendingCheckoutCourse.id,
-    courseTitle: pendingCheckoutCourse.title,
-    amount: subtotal,
-    tax: tax,
-    total: total,
-    paymentMethod: "Razorpay / UPI Secure Gateway",
-    paymentStatus: "PAID",
-    transactionId: txnId,
-    paidAt: now.toISOString()
-  };
-  state.purchases.unshift(newPurchase);
-
-  // 2. Upsert Enrollment
-  const existingEnrIdx = state.enrollments.findIndex(e => e.userId === state.currentUser.email && e.courseId === pendingCheckoutCourse.id);
-  if (existingEnrIdx >= 0) {
-    state.enrollments[existingEnrIdx].status = "ACTIVE";
-    state.enrollments[existingEnrIdx].expiresAt = expiry.toISOString();
-  } else {
-    state.enrollments.push({
-      id: "enr-" + Date.now(),
-      userId: state.currentUser.email,
-      courseId: pendingCheckoutCourse.id,
-      enrolledAt: now.toISOString(),
-      expiresAt: expiry.toISOString(),
-      status: "ACTIVE",
-      transactionId: txnId,
-      amountPaid: subtotal,
-      invoiceNumber: invNum
-    });
+  if (confirm(`Simulate online checkout for ${course.title} (₹${course.price})?`)) {
+    const existing = state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === course.id);
+    if (!existing) {
+      state.enrollments.push({
+        id: "enr-" + Date.now(),
+        userId: state.currentUser.email,
+        courseId: course.id,
+        enrolledAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
+        status: "ACTIVE"
+      });
+      saveState();
+    }
+    alert("Payment successful! 365-day course validity activated.");
+    navigate('dashboard');
   }
-
-  logAuditEvent("PAYMENT_SUCCESSFUL", `Payment of ₹${total} processed for ${pendingCheckoutCourse.title}`);
-  saveState();
-
-  const modal = document.getElementById('active-checkout-modal');
-  if (modal) modal.remove();
-
-  alert(`Payment Confirmed!\nInvoice #${invNum} generated.\nAccess activated for 365 days.`);
-  navigate('dashboard');
 }
 
-// -------------------------------------------------------------
-// INVOICE RECEIPT MODAL
-// -------------------------------------------------------------
-function showInvoiceModal(purchaseId) {
-  const p = state.purchases.find(item => item.id === purchaseId);
-  if (!p) return;
-
-  const html = `
-    <div id="active-invoice-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl border border-slate-200 space-y-6">
-        <div class="flex justify-between items-start pb-4 border-b border-slate-100">
-          <div>
-            <h3 class="text-xl font-black text-slate-900">TAX INVOICE / RECEIPT</h3>
-            <p class="text-xs text-slate-400 mt-0.5">Educare Technical Training Institute (ISO 9001:2015)</p>
-          </div>
-          <button onclick="document.getElementById('active-invoice-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 text-xs text-slate-600">
-          <div>
-            <strong class="text-slate-900 block">Billed To:</strong>
-            <div>${p.studentName}</div>
-            <div>${p.userId}</div>
-          </div>
-          <div class="text-right">
-            <div><strong>Invoice No:</strong> ${p.invoiceNumber}</div>
-            <div><strong>Transaction ID:</strong> ${p.transactionId}</div>
-            <div><strong>Date:</strong> ${new Date(p.paidAt).toLocaleDateString()}</div>
-          </div>
-        </div>
-
-        <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
-          <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
-            <tr>
-              <th class="p-3">Course Item</th>
-              <th class="p-3 text-right">Validity</th>
-              <th class="p-3 text-right">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr>
-              <td class="p-3 font-semibold text-slate-900">${p.courseTitle}</td>
-              <td class="p-3 text-right">365 Days</td>
-              <td class="p-3 text-right">₹${p.amount.toLocaleString('en-IN')}</td>
-            </tr>
-            <tr>
-              <td colspan="2" class="p-3 text-right font-medium text-slate-500">CGST (9%) + SGST (9%)</td>
-              <td class="p-3 text-right font-medium text-slate-700">₹${p.tax.toLocaleString('en-IN')}</td>
-            </tr>
-            <tr class="bg-slate-50 font-bold text-slate-900">
-              <td colspan="2" class="p-3 text-right">Total Paid (Inclusive of Taxes)</td>
-              <td class="p-3 text-right text-blue-600 text-sm">₹${p.total.toLocaleString('en-IN')}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="flex justify-between items-center pt-2">
-          <span class="text-[10px] text-slate-400">Status: Verified Payment • Computer Generated Invoice</span>
-          <button onclick="window.print()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold shadow">
-            🖨 Print Invoice
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-// -------------------------------------------------------------
-// VERIFIABLE CERTIFICATE MODAL
-// -------------------------------------------------------------
 function showCertificateModal(courseId) {
   const course = state.courses.find(c => c.id === courseId);
   const certId = "EDU-CERT-" + Math.floor(100000 + Math.random() * 900000);
@@ -1241,39 +853,22 @@ function showCertificateModal(courseId) {
     <div id="active-cert-modal" class="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white rounded-3xl max-w-3xl w-full p-10 shadow-2xl border-8 border-slate-900 space-y-6 text-center relative overflow-hidden">
         <button onclick="document.getElementById('active-cert-modal').remove()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-        
         <div class="space-y-2">
           <div class="w-12 h-12 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-black text-2xl">E</div>
           <div class="text-xs uppercase tracking-widest text-slate-400 font-bold">Educare Technical Training Institute</div>
           <h2 class="text-3xl font-black text-slate-900 tracking-tight">CERTIFICATE OF COMPLETION</h2>
         </div>
-
         <p class="text-xs text-slate-500 italic">This is to certify that</p>
         <div class="text-3xl font-extrabold text-blue-700 font-serif border-b-2 border-slate-200 pb-2 max-w-md mx-auto">
           ${state.currentUser.name}
         </div>
-
         <p class="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
-          has successfully satisfied all rigorous curriculum requirements, module assessments, and practical technical assignments for:
+          has successfully satisfied all curriculum requirements, assessments, and technical assignments for:
         </p>
-        <div class="text-xl font-bold text-slate-900">
-          ${course.title}
-        </div>
-
-        <div class="grid grid-cols-2 gap-8 pt-8 max-w-md mx-auto text-xs border-t border-slate-200">
-          <div>
-            <div class="font-serif italic font-bold text-slate-800">${course.instructorName}</div>
-            <div class="text-[10px] text-slate-400">Chief Course Faculty</div>
-          </div>
-          <div>
-            <div class="font-serif italic font-bold text-slate-800">Academic Director</div>
-            <div class="text-[10px] text-slate-400">Educare Standards Committee</div>
-          </div>
-        </div>
-
+        <div class="text-xl font-bold text-slate-900">${course.title}</div>
         <div class="pt-4 text-[10px] text-slate-400 font-mono flex justify-between items-center border-t border-slate-100">
           <span>Certificate ID: ${certId}</span>
-          <span>Verified Online: educare-hazel.vercel.app</span>
+          <span>Verified: educare-hazel.vercel.app</span>
           <button onclick="window.print()" class="px-3 py-1 bg-slate-900 text-white rounded text-[11px] font-bold">🖨 Print</button>
         </div>
       </div>
@@ -1282,148 +877,15 @@ function showCertificateModal(courseId) {
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
-// -------------------------------------------------------------
-// LIVE CLASS SCHEDULER & PLAYER
-// -------------------------------------------------------------
-function promptScheduleLiveClass() {
-  const title = prompt("Enter Live Session Title:");
-  if (!title) return;
-  const platform = prompt("Platform (Zoom, Google Meet, or YouTube Live):", "Zoom") || "Zoom";
-  const joinUrl = prompt("Enter Class Meeting URL:", "https://zoom.us/j/123456789") || "https://zoom.us";
-  const courseId = state.courses[0]?.id || "c-mechanical";
-
-  state.liveClasses.unshift({
-    id: "live-" + Date.now(),
-    courseId,
-    title,
-    platform,
-    joinUrl,
-    scheduledDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-    durationMinutes: 60,
-    instructorName: state.currentUser.name,
-    isCompleted: false,
-    recordingUrl: null
-  });
-
-  logAuditEvent("LIVE_CLASS_SCHEDULED", `Scheduled live session: ${title} on ${platform}`);
-  saveState();
-  alert("Live session scheduled and broadcasted to enrolled students.");
-  navigate(currentRoute);
-}
-
-function playLiveRecording(url) {
-  const html = `
-    <div id="live-rec-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-black rounded-2xl max-w-3xl w-full p-4 space-y-2">
-        <div class="flex justify-between items-center text-white text-xs pb-2 border-b border-slate-800">
-          <span>Archived Live Class Stream</span>
-          <button onclick="document.getElementById('live-rec-modal').remove()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
-        </div>
-        <video src="${url}" controls controlsList="nodownload" class="w-full aspect-video rounded-xl"></video>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-// -------------------------------------------------------------
-// USER MANAGEMENT & ROLE MUTATIONS
-// -------------------------------------------------------------
-function promptAddUser() {
-  const name = prompt("User Full Name:");
-  if (!name) return;
-  const email = prompt("User Email Address:");
-  if (!email) return;
-  const role = prompt("Role (STUDENT, INSTRUCTOR, ADMIN, SUPER_ADMIN):", "STUDENT").toUpperCase();
-
-  state.users.push({
-    id: "u-" + Date.now(),
-    name,
-    email: email.toLowerCase(),
-    role: ['STUDENT', 'INSTRUCTOR', 'ADMIN', 'SUPER_ADMIN'].includes(role) ? role : 'STUDENT',
-    active: true,
-    activeSessionId: null
-  });
-
-  logAuditEvent("USER_CREATED", `Added user ${name} (${email}) as ${role}`);
-  saveState();
-  navigate('admin');
-}
-
-function changeUserRole(userId, newRole) {
-  const user = state.users.find(u => u.id === userId);
-  if (user) {
-    user.role = newRole;
-    logAuditEvent("ROLE_CHANGED", `Changed ${user.email} to ${newRole}`);
-    saveState();
-    renderNav();
-  }
-}
-
-function toggleUserStatus(userId) {
-  const user = state.users.find(u => u.id === userId);
-  if (user) {
-    user.active = !user.active;
-    logAuditEvent("USER_STATUS_TOGGLED", `${user.email} status set to ${user.active ? 'Active' : 'Locked'}`);
-    saveState();
-    navigate('admin');
-  }
-}
-
-function terminateSession(userId) {
-  const user = state.users.find(u => u.id === userId);
-  if (user) {
-    user.activeSessionId = null;
-    logAuditEvent("SESSION_RESET", `Session terminated for ${user.email}`);
-    saveState();
-    alert(`Session terminated for ${user.name}. The user will be required to sign in again.`);
-    navigate('admin');
-  }
-}
-
-function promptUpdatePrice(courseId) {
-  const course = state.courses.find(c => c.id === courseId);
-  if (!course) return;
-  const newPrice = parseInt(prompt("Enter new Course Price (INR):", course.price));
-  if (!isNaN(newPrice) && newPrice > 0) {
-    course.price = newPrice;
-    logAuditEvent("PRICE_UPDATED", `Updated price for ${course.title} to ₹${newPrice}`);
-    saveState();
-    navigate('instructor');
-  }
-}
-
-function promptAddSection(courseId) {
-  const course = state.courses.find(c => c.id === courseId);
-  if (!course) return;
-  const title = prompt("Enter Module Title:");
-  if (!title) return;
-  course.sections.push({ id: "s-" + Date.now(), title, lectures: [] });
-  saveState();
-  navigate('instructor');
-}
-
-function promptAddLecture(courseId) {
-  const course = state.courses.find(c => c.id === courseId);
-  if (!course || course.sections.length === 0) return;
-  const title = prompt("Enter Lecture Title:");
-  if (!title) return;
-  const videoUrl = prompt("Enter Video URL (or leave blank for standard demo):") || RELIABLE_VIDEOS.stream1;
-  course.sections[0].lectures.push({ id: "l-" + Date.now(), title, duration: 46, videoUrl });
-  saveState();
-  navigate('instructor');
-}
-
-function requestRefundPrompt(purchaseId) {
-  const p = state.purchases.find(item => item.id === purchaseId);
+function showPolicyModal(key) {
+  const p = activePolicies[key];
   if (!p) return;
-  if (confirm(`Request a cancellation and refund for ${p.courseTitle}? According to policy, this must be within 7 days with < 20% progress.`)) {
-    p.paymentStatus = "REFUND_REQUESTED";
-    logAuditEvent("REFUND_REQUESTED", `Refund requested for ${p.invoiceNumber}`);
-    saveState();
-    alert("Refund request submitted to administration. Settlement takes 5-7 business days.");
-    navigate('dashboard');
-  }
+  alert(`${p.title}\n\n${p.sections.map(s => `${s.heading}:\n${s.body}`).join('\n\n')}`);
+}
+
+function showContactModal() {
+  const c = activePolicies.contact;
+  alert(`Educare Institute Contact\n\nAdmissions: ${c.admissionsEmail}\nSupport: ${c.supportEmail}\nPhone: ${c.phone}\nAddress: ${c.address}`);
 }
 
 function startLearning(courseId) {
@@ -1434,159 +896,17 @@ function startLearning(courseId) {
   }
 }
 
-// -------------------------------------------------------------
-// PUBLIC MODALS (POLICIES & CONTACT)
-// -------------------------------------------------------------
-function showPolicyModal(policyKey) {
-  const policy = POLICIES_DATA[policyKey];
-  if (!policy) return;
-
-  const html = `
-    <div id="active-policy-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 max-h-[85vh] flex flex-col">
-        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
-          <div>
-            <h3 class="text-lg font-bold text-slate-900">${policy.title}</h3>
-            <span class="text-xs text-slate-400">${policy.lastUpdated}</span>
-          </div>
-          <button onclick="document.getElementById('active-policy-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-        </div>
-        <div class="overflow-y-auto py-4 space-y-4 text-xs text-slate-600 leading-relaxed">
-          ${policy.sections.map(s => `
-            <div>
-              <h4 class="font-bold text-slate-800 text-sm mb-1">${s.heading}</h4>
-              <p>${s.body}</p>
-            </div>
-          `).join('')}
-        </div>
-        <div class="pt-3 border-t border-slate-100 flex justify-end">
-          <button onclick="document.getElementById('active-policy-modal').remove()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold">Close</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function showContactModal() {
-  const c = POLICIES_DATA.contact;
-  const html = `
-    <div id="active-contact-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
-          <h3 class="text-lg font-bold text-slate-900">Institute Official Contact</h3>
-          <button onclick="document.getElementById('active-contact-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-        </div>
-        <div class="space-y-3 text-xs text-slate-600">
-          <div>
-            <strong class="text-slate-800 block mb-0.5">Admissions:</strong>
-            <a href="mailto:${c.admissionsEmail}" class="text-blue-600 hover:underline">${c.admissionsEmail}</a>
-          </div>
-          <div>
-            <strong class="text-slate-800 block mb-0.5">Student Support:</strong>
-            <a href="mailto:${c.supportEmail}" class="text-blue-600 hover:underline">${c.supportEmail}</a>
-          </div>
-          <div>
-            <strong class="text-slate-800 block mb-0.5">Administration:</strong>
-            <a href="mailto:${c.adminEmail}" class="text-blue-600 hover:underline">${c.adminEmail}</a>
-          </div>
-          <div>
-            <strong class="text-slate-800 block mb-0.5">Phone &amp; WhatsApp:</strong>
-            <span>${c.phone} / ${c.whatsapp}</span>
-          </div>
-          <div>
-            <strong class="text-slate-800 block mb-0.5">Campus Address:</strong>
-            <span>${c.address}</span>
-          </div>
-        </div>
-        <div class="pt-2 border-t border-slate-100 flex justify-end">
-          <button onclick="document.getElementById('active-contact-modal').remove()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold">Close</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-// -------------------------------------------------------------
-// QUIZ MODAL & ASSESSMENT
-// -------------------------------------------------------------
-function openQuizModal(courseId, quizId) {
-  const course = state.courses.find(c => c.id === courseId);
-  const quiz = course?.quizzes.find(q => q.id === quizId);
-  if (!quiz) return;
-
-  const modalHtml = `
-    <div id="active-quiz-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 my-8">
-        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
-          <h3 class="text-lg font-bold text-slate-900">${quiz.title}</h3>
-          <button onclick="document.getElementById('active-quiz-modal').remove()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
-        </div>
-        <form id="quiz-form" onsubmit="submitQuiz(event, '${courseId}', '${quizId}')" class="mt-4 space-y-6">
-          ${quiz.questions.map((q, qIdx) => `
-            <div class="space-y-2">
-              <p class="text-sm font-semibold text-slate-800">${qIdx + 1}. ${q.questionText}</p>
-              <div class="space-y-1.5 pl-2">
-                ${q.options.map((opt, optIdx) => `
-                  <label class="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer p-2 rounded-lg hover:bg-slate-50 border border-slate-100">
-                    <input type="radio" name="question_${qIdx}" value="${optIdx}" required class="accent-indigo-600" />
-                    <span>${opt}</span>
-                  </label>
-                `).join('')}
-              </div>
-            </div>
-          `).join('')}
-          <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
-            <button type="button" onclick="document.getElementById('active-quiz-modal').remove()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-            <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow">Submit Assessment</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
-}
-
-function submitQuiz(e, courseId, quizId) {
-  e.preventDefault();
-  const course = state.courses.find(c => c.id === courseId);
-  const quiz = course?.quizzes.find(q => q.id === quizId);
-  if (!quiz || !state.currentUser) return;
-
-  const formData = new FormData(e.target);
-  let correctCount = 0;
-
-  quiz.questions.forEach((q, qIdx) => {
-    const selected = parseInt(formData.get(`question_${qIdx}`));
-    if (selected === q.correctAnswerIndex) correctCount++;
-  });
-
-  const score = Math.round((correctCount / quiz.questions.length) * 100);
-  const passed = score >= quiz.passingScore;
-
-  if (!state.quizAttempts[state.currentUser.email]) {
-    state.quizAttempts[state.currentUser.email] = {};
+// Resilient Bootstrap Execution (Works both if DOM is loading or already loaded)
+function startEducareApp() {
+  try {
+    navigate('home');
+  } catch (err) {
+    console.error("Educare startup failed:", err);
   }
-
-  state.quizAttempts[state.currentUser.email][quiz.id] = {
-    score,
-    passed,
-    attemptedAt: new Date().toISOString()
-  };
-
-  logAuditEvent("QUIZ_ATTEMPTED", `Scored ${score}% on ${quiz.title}`);
-  saveState();
-
-  document.getElementById('active-quiz-modal').remove();
-  alert(`Assessment Complete!\nYour Score: ${score}%\nResult: ${passed ? 'PASSED ✓' : 'NEEDS RETAKE'}`);
-  navigate('learn', { courseId, lectureId: course.sections[0]?.lectures[0]?.id });
 }
 
-// -------------------------------------------------------------
-// BOOTSTRAP
-// -------------------------------------------------------------
-window.onload = () => {
-  navigate('home');
-};
-
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startEducareApp);
+} else {
+  startEducareApp();
+}
