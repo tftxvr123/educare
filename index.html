@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- OFFICIAL GOOGLE IDENTITY SERVICES (SSO) SDK -->
+  <!-- GOOGLE IDENTITY SERVICES SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     .line-clamp-2 {
@@ -75,19 +75,19 @@
     </div>
   </footer>
 
-  <!-- AUTH MODAL (Real Google SSO + 1-Click Role Switcher) -->
+  <!-- AUTH MODAL (Google SSO + Standard Credentials) -->
   <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
       <div class="flex justify-between items-center pb-4 border-b border-slate-100">
         <div>
-          <h3 class="text-lg font-bold text-slate-900">Sign In to Educare</h3>
-          <p class="text-xs text-slate-500 mt-0.5">Required to enroll, watch lectures, and track progress.</p>
+          <h3 class="text-lg font-bold text-slate-900" id="auth-modal-title">Sign In to Educare</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Required to enroll, watch lectures, and manage courses.</p>
         </div>
         <button onclick="toggleAuthModal(false)" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
       </div>
       <div class="mt-4 space-y-4">
         
-        <!-- Google SSO Button Container -->
+        <!-- Google SSO -->
         <button onclick="handleGoogleAuth()" class="w-full py-2.5 px-4 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-3 transition shadow-sm">
           <svg class="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -98,47 +98,44 @@
           Continue with Google Account
         </button>
 
-        <!-- Hidden Google Render Div for native One-Tap if configured -->
         <div id="google-signin-btn" class="flex justify-center"></div>
 
         <div class="relative flex py-1 items-center">
           <div class="flex-grow border-t border-slate-200"></div>
-          <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase font-semibold">Or 1-Click Role Switch</span>
+          <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase font-semibold">Or with email &amp; password</span>
           <div class="flex-grow border-t border-slate-200"></div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="quickAuth('student')" class="p-2.5 border border-blue-200 bg-blue-50 text-blue-800 rounded-xl text-xs font-medium hover:bg-blue-100 text-left transition">
-            <span class="block font-bold">Student</span>
-            Jane (Enrolled)
-          </button>
-          <button onclick="quickAuth('instructor')" class="p-2.5 border border-indigo-200 bg-indigo-50 text-indigo-800 rounded-xl text-xs font-medium hover:bg-indigo-100 text-left transition">
-            <span class="block font-bold">Instructor</span>
-            Prof. Alan
-          </button>
-          <button onclick="quickAuth('admin')" class="p-2.5 border border-amber-200 bg-amber-50 text-amber-800 rounded-xl text-xs font-medium hover:bg-amber-100 text-left transition">
-            <span class="block font-bold">Admin</span>
-            Course Ops
-          </button>
-          <button onclick="quickAuth('superadmin')" class="p-2.5 border border-rose-200 bg-rose-50 text-rose-800 rounded-xl text-xs font-medium hover:bg-rose-100 text-left transition">
-            <span class="block font-bold">Super Admin</span>
-            Director
-          </button>
-        </div>
+        <!-- Standard Credentials Form -->
+        <form onsubmit="handleAuthSubmit(event)" class="space-y-3">
+          <div id="auth-name-field" class="hidden">
+            <label class="block text-xs font-medium text-slate-600 mb-1">Full Name</label>
+            <input type="text" id="auth-name" placeholder="Your Full Name" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
 
-        <div class="relative flex py-1 items-center">
-          <div class="flex-grow border-t border-slate-200"></div>
-          <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase font-semibold">Or email sign in</span>
-          <div class="flex-grow border-t border-slate-200"></div>
-        </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Email Address</label>
+            <input type="email" id="auth-email" required placeholder="name@example.com" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
 
-        <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Email</label>
-          <input type="email" id="auth-email" placeholder="student@educare.org.in" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-        </div>
-        <button onclick="handleCustomLogin()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition">
-          Sign In
-        </button>
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-medium text-slate-600">Password</label>
+              <button type="button" onclick="togglePasswordVisibility()" class="text-[11px] text-blue-600 hover:underline">Show</button>
+            </div>
+            <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <button type="submit" id="auth-submit-btn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition">
+            Sign In
+          </button>
+
+          <div class="text-center pt-2">
+            <button type="button" onclick="toggleAuthMode()" id="auth-toggle-mode-btn" class="text-xs text-slate-500 hover:text-blue-600">
+              New student? <span class="font-bold text-blue-600">Create an account</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
