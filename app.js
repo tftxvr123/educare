@@ -1,7 +1,4 @@
 
-
-
-
 // app.js — Educare Production Core LMS Controller
 
 // =============================================================
@@ -10,9 +7,17 @@
 
 // Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
 const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
-// Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
 
+// Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
+
+// Passwords for 1-Click Role Switch
+const ROLE_PASSWORDS = {
+  student: { name: "Jane (Student)", pass: "Student@123" },
+  instructor: { name: "Prof. Alan (Instructor)", pass: "Instructor@123" },
+  admin: { name: "Course Ops (Admin)", pass: "Admin@123" },
+  superadmin: { name: "Director (Super Admin)", pass: "Super@123" }
+};
 
 const FALLBACK_COURSES = [
   {
@@ -261,9 +266,6 @@ function generateSessionId() {
   return "sess_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
 }
 
-// -------------------------------------------------------------
-// SECURE GOOGLE SSO ENGINE (OAUTH2 TOKEN POPUP + GIS RENDER)
-// -------------------------------------------------------------
 function loginWithGoogleProfile(email, name, sub) {
   const sessId = generateSessionId();
   const normalizedEmail = email.toLowerCase().trim();
@@ -311,7 +313,6 @@ function handleGoogleCredentialResponse(response) {
   }
 }
 
-// Button Click Handler: Uses OAuth2 Token Client (immune to cooldowns)
 function handleGoogleAuth() {
   const keyToUse = (window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID);
 
@@ -359,7 +360,6 @@ function handleGoogleAuth() {
   }
 }
 
-// Render official Google button into the modal
 function initOfficialGoogleButton() {
   const btnContainer = document.getElementById("google-signin-btn");
   if (!btnContainer) return;
@@ -386,7 +386,20 @@ function initOfficialGoogleButton() {
   }
 }
 
+// =============================================================
+// PASSWORD-PROTECTED 1-CLICK ROLE SWITCH
+// =============================================================
 function quickAuth(roleType) {
+  const roleConfig = ROLE_PASSWORDS[roleType];
+  if (roleConfig) {
+    const entered = prompt(`Enter password for ${roleConfig.name}:\n(Password: ${roleConfig.pass})`);
+    if (entered === null) return; // User cancelled prompt
+    if (entered.trim() !== roleConfig.pass) {
+      alert("Incorrect password. Access denied.");
+      return;
+    }
+  }
+
   const sessId = generateSessionId();
   if (roleType === 'superadmin') {
     state.currentUser = { email: "superadmin@educare.local", name: "Director Super Admin", role: "SUPER_ADMIN", sessionId: sessId };
@@ -542,7 +555,6 @@ function renderHomeView() {
       </div>
     </section>
 
-    <!-- Institution Overview -->
     <section class="bg-white border-b border-slate-200 py-12 px-4">
       <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
         <div>
@@ -562,7 +574,6 @@ function renderHomeView() {
       </div>
     </section>
 
-    <!-- Core Programs Grid -->
     <section class="max-w-7xl mx-auto px-4 py-16">
       <div class="flex justify-between items-end mb-6">
         <div>
