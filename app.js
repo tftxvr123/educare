@@ -1,5 +1,7 @@
 // app.js — Educare Production Core LMS Controller (Self-Healing & Resilient)
 
+const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
+
 const FALLBACK_COURSES = [
   {
     id: "c-mechanical",
