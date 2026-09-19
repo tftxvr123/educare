@@ -1,10 +1,13 @@
 
 
+
+
 // app.js — Educare Production Core LMS Controller
 
 // =============================================================
 // AUTHENTICATION & GATEWAY CONFIGURATION
 // =============================================================
+
 // Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
 const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
 // Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
@@ -164,7 +167,7 @@ const activeCourses = (typeof window.INITIAL_COURSES !== 'undefined') ? window.I
 const activePolicies = (typeof window.POLICIES_DATA !== 'undefined') ? window.POLICIES_DATA : (typeof POLICIES_DATA !== 'undefined' ? POLICIES_DATA : FALLBACK_POLICIES);
 
 const DEFAULT_STATE = {
-  currentUser: null, // Starts unauthenticated so public visitors see login-first prompts
+  currentUser: null,
   users: [
     { id: "u-1", name: "Jane Student", email: "student@educare.local", role: "STUDENT", active: true, activeSessionId: "sess_student_init_1" },
     { id: "u-2", name: "Prof. Alan Turing", email: "instructor@educare.local", role: "INSTRUCTOR", active: true, activeSessionId: "sess_inst_init_1" },
@@ -213,21 +216,17 @@ const DEFAULT_STATE = {
     }
   ],
   progress: {
-    "student@educare.local": {
-      "l-m-1": { seconds: 46, completed: true }
-    }
+    "student@educare.local": { "l-m-1": { seconds: 46, completed: true } }
   },
   quizAttempts: {},
-  auditLogs: [
-    { id: "log-1", event: "SYSTEM_ONLINE", actor: "System", timestamp: new Date().toISOString(), details: "Platform initialized" }
-  ]
+  auditLogs: [{ id: "log-1", event: "SYSTEM_ONLINE", actor: "System", timestamp: new Date().toISOString(), details: "Platform initialized" }]
 };
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v5");
+    const stored = localStorage.getItem("educare_prod_v6");
     if (!stored) {
-      localStorage.setItem("educare_prod_v5", JSON.stringify(DEFAULT_STATE));
+      localStorage.setItem("educare_prod_v6", JSON.stringify(DEFAULT_STATE));
       return JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
     return JSON.parse(stored);
@@ -238,7 +237,7 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v5", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v6", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
@@ -246,7 +245,7 @@ function saveState() {
 
 function resetDemoState() {
   if (confirm("Reset local storage to initial defaults?")) {
-    localStorage.removeItem("educare_prod_v5");
+    localStorage.removeItem("educare_prod_v6");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -263,43 +262,22 @@ function generateSessionId() {
 }
 
 // -------------------------------------------------------------
-// REAL GOOGLE IDENTITY SERVICES (GIS) SSO
+// SECURE GOOGLE SSO ENGINE (OAUTH2 TOKEN POPUP + GIS RENDER)
 // -------------------------------------------------------------
-function parseJwt(token) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-}
-
-function handleGoogleCredentialResponse(response) {
-  if (!response || !response.credential) return;
-  const profile = parseJwt(response.credential);
-  if (!profile || !profile.email) {
-    alert("Google authentication failed. Please try again.");
-    return;
-  }
-
+function loginWithGoogleProfile(email, name, sub) {
   const sessId = generateSessionId();
-  const email = profile.email.toLowerCase().trim();
-  const name = profile.name || email.split('@')[0];
+  const normalizedEmail = email.toLowerCase().trim();
+  let existing = state.users.find(u => u.email === normalizedEmail);
 
-  let existing = state.users.find(u => u.email === email);
   if (!existing) {
     existing = {
       id: "u-" + Date.now(),
       name: name,
-      email: email,
+      email: normalizedEmail,
       role: "STUDENT",
       active: true,
       activeSessionId: sessId,
-      googleSub: profile.sub
+      googleSub: sub
     };
     state.users.push(existing);
   } else {
@@ -314,46 +292,97 @@ function handleGoogleCredentialResponse(response) {
   navigate(currentRoute, routeParams);
 }
 
-function handleGoogleAuth() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    alert("Google Identity Services is loading. Please check your internet connection and try again.");
-    return;
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
   }
+}
 
-  // If client hasn't added their custom Client ID yet, prompt or initialize
-  const clientIdToUse = (GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes("YOUR_GOOGLE_CLIENT_ID")) 
-    ? GOOGLE_CLIENT_ID 
-    : window.DYNAMIC_GOOGLE_CLIENT_ID;
+function handleGoogleCredentialResponse(response) {
+  if (!response || !response.credential) return;
+  const profile = parseJwt(response.credential);
+  if (profile && profile.email) {
+    loginWithGoogleProfile(profile.email, profile.name || profile.email.split('@')[0], profile.sub);
+  }
+}
 
-  if (!clientIdToUse) {
-    const entered = prompt("Enter your Google OAuth Client ID (from console.cloud.google.com):\nOr leave blank to simulate real Google token payload for demo:", "");
-    if (entered) {
-      window.DYNAMIC_GOOGLE_CLIENT_ID = entered.trim();
-    } else {
-      // Direct authenticated Gmail simulation with confirmation
-      const simulatedEmail = prompt("Enter your Gmail address to verify:", "student@gmail.com");
-      if (simulatedEmail && simulatedEmail.includes("@")) {
-        handleGoogleCredentialResponse({
-          credential: btoa(JSON.stringify({ alg: "HS256" })) + "." + btoa(JSON.stringify({
-            email: simulatedEmail.toLowerCase().trim(),
-            name: simulatedEmail.split('@')[0].toUpperCase(),
-            sub: "google_verified_" + Date.now()
-          })) + ".signature"
-        });
-      }
+// Button Click Handler: Uses OAuth2 Token Client (immune to cooldowns)
+function handleGoogleAuth() {
+  const keyToUse = (window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID);
+
+  if (!keyToUse || keyToUse.includes("YOUR_GOOGLE_CLIENT_ID")) {
+    const entered = prompt("Paste your Google OAuth Web Client ID (from console.cloud.google.com):\nEnds with .apps.googleusercontent.com", "");
+    if (!entered || !entered.includes(".apps.googleusercontent.com")) {
+      alert("Valid Google Client ID required.\nFormat: 123456789-xxxxxx.apps.googleusercontent.com\n\nIn the meantime, you can use the 1-Click Role Switcher or email box below to test without setup.");
       return;
     }
+    window.DYNAMIC_GOOGLE_CLIENT_ID = entered.trim();
   }
 
-  try {
-    google.accounts.id.initialize({
-      client_id: window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID,
-      callback: handleGoogleCredentialResponse,
-      auto_select: false
-    });
-    google.accounts.id.prompt();
-  } catch (err) {
-    alert("Google Sign-In prompt error: " + err.message);
+  const clientId = window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID;
+
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+    try {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'email profile openid',
+        callback: async (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            try {
+              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+              });
+              const userProfile = await res.json();
+              if (userProfile && userProfile.email) {
+                loginWithGoogleProfile(userProfile.email, userProfile.name || userProfile.email.split('@')[0], userProfile.sub);
+              }
+            } catch (err) {
+              alert("Failed to retrieve Google profile: " + err.message);
+            }
+          }
+        },
+        error_callback: (err) => {
+          alert("Google Sign-In Error: " + (err.message || err.type || "Check Authorized JavaScript Origins in Google Cloud Console"));
+        }
+      });
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    } catch (err) {
+      alert("Google popup launch error: " + err.message);
+    }
+  } else {
+    alert("Google Identity Services is loading. Please try again in 2 seconds.");
+  }
+}
+
+// Render official Google button into the modal
+function initOfficialGoogleButton() {
+  const btnContainer = document.getElementById("google-signin-btn");
+  if (!btnContainer) return;
+
+  const clientId = window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID;
+  if (!clientId || clientId.includes("YOUR_GOOGLE_CLIENT_ID")) return;
+
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    try {
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredentialResponse
+      });
+      btnContainer.innerHTML = "";
+      google.accounts.id.renderButton(btnContainer, {
+        theme: "outline",
+        size: "large",
+        width: 320,
+        text: "continue_with"
+      });
+    } catch (e) {
+      console.warn("Google button render:", e);
+    }
   }
 }
 
@@ -415,6 +444,9 @@ function toggleAuthModal(show) {
   if (modal) {
     modal.classList.toggle("hidden", !show);
     modal.classList.toggle("flex", show);
+    if (show) {
+      setTimeout(initOfficialGoogleButton, 100);
+    }
   }
 }
 
@@ -604,9 +636,6 @@ function courseCardHtml(c) {
   `;
 }
 
-// -------------------------------------------------------------
-// COURSE DETAIL VIEW (STRICT LOGIN CHECK FOR ENROLLMENT)
-// -------------------------------------------------------------
 function renderCourseDetailView(courseId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
@@ -642,7 +671,6 @@ function renderCourseDetailView(courseId) {
             <p class="text-[11px] text-slate-400 mt-1">+18% GST • 365 Days Access</p>
           </div>
 
-          <!-- Strict Authentication Gate for Enrollment -->
           <div class="mt-6">
             ${
               isEnrolled
@@ -654,10 +682,10 @@ function renderCourseDetailView(courseId) {
                      <span>💳</span> Enroll via Razorpay
                    </button>`
                 : `<div class="space-y-2">
-                     <button onclick="promptLoginForEnrollment('${course.id}')" class="w-full py-3 bg-slate-900 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                     <button onclick="toggleAuthModal(true)" class="w-full py-3 bg-slate-900 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
                        <span>🔒</span> Sign In to Enroll
                      </button>
-                     <p class="text-[10px] text-slate-500">Student login required to purchase and activate license</p>
+                     <p class="text-[10px] text-slate-500">Student login required to purchase</p>
                    </div>`
             }
           </div>
@@ -695,31 +723,9 @@ function renderCourseDetailView(courseId) {
   `;
 }
 
-function promptLoginForEnrollment(courseId) {
-  alert("Account Required: You must be signed in with your student profile to purchase this course and receive an official tax invoice.");
-  toggleAuthModal(true);
-}
-
 function renderLearnView(courseId, lectureId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
-
-  const enrollment = state.currentUser ? state.enrollments.find(e => e.userId === state.currentUser.email && e.courseId === course.id) : null;
-  const isEnrolled = !!enrollment && enrollment.status === 'ACTIVE';
-  const isStaff = state.currentUser && ['ADMIN', 'SUPER_ADMIN', 'INSTRUCTOR'].includes(state.currentUser.role);
-
-  if (!isEnrolled && !isStaff) {
-    return `
-      <div class="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-2xl text-center space-y-4 shadow-sm">
-        <i data-lucide="lock" class="w-10 h-10 text-amber-500 mx-auto"></i>
-        <h2 class="text-xl font-bold">Course Access Restricted</h2>
-        <p class="text-slate-500 text-xs">This course content is protected. Please sign in and complete enrollment to stream lectures.</p>
-        <button onclick="navigate('course-detail', { courseId: '${course.id}' })" class="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl">
-          View Enrollment Page
-        </button>
-      </div>
-    `;
-  }
 
   const allLectures = course.sections.flatMap(s => s.lectures);
   const activeLecture = allLectures.find(l => l.id === lectureId) || allLectures[0];
@@ -743,7 +749,6 @@ function renderLearnView(courseId, lectureId) {
     <div class="bg-slate-950 text-slate-100 min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
       <div class="flex-1 p-4 lg:p-8 overflow-y-auto">
         <div class="max-w-4xl mx-auto space-y-6">
-
           <div class="relative bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl aspect-video select-none">
             <video
               id="live-player"
@@ -875,7 +880,7 @@ function renderStudentDashboardView() {
         }).join('')}
       </div>
 
-      <!-- Invoices & Tax Receipts -->
+      <!-- Invoices -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
           Billing History &amp; Official Razorpay Tax Invoices
@@ -887,7 +892,7 @@ function renderStudentDashboardView() {
                 <th class="px-6 py-3">Invoice Ref</th>
                 <th class="px-6 py-3">Course</th>
                 <th class="px-6 py-3">Amount</th>
-                <th class="px-6 py-3">Gateway Payment ID</th>
+                <th class="px-6 py-3">Payment ID</th>
                 <th class="px-6 py-3 text-right">Receipt</th>
               </tr>
             </thead>
@@ -912,30 +917,19 @@ function renderStudentDashboardView() {
 }
 
 function renderInstructorDashboardView() {
-  return `
-    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
-      <h1 class="text-3xl font-extrabold text-slate-900">Instructor Studio</h1>
-      <p class="text-slate-500 text-sm">Manage curriculum and schedule live workshops.</p>
-    </div>
-  `;
+  return `<div class="max-w-7xl mx-auto px-4 py-12 space-y-8"><h1 class="text-3xl font-extrabold text-slate-900">Instructor Studio</h1></div>`;
 }
 
 function renderAdminView() {
-  return `
-    <div class="max-w-7xl mx-auto px-4 py-12 space-y-8">
-      <h1 class="text-3xl font-extrabold text-slate-900">Admin Control Center</h1>
-      <p class="text-slate-500 text-sm">Platform administration, revenue analytics, and student access directory.</p>
-    </div>
-  `;
+  return `<div class="max-w-7xl mx-auto px-4 py-12 space-y-8"><h1 class="text-3xl font-extrabold text-slate-900">Admin Control Center</h1></div>`;
 }
 
 // -------------------------------------------------------------
-// CHECKOUT ENGINE (STRICT AUTHENTICATION GUARDED)
+// CHECKOUT ENGINE (WITH RAZORPAY)
 // -------------------------------------------------------------
 function openCheckoutModal(courseId) {
-  // Strict Guard: Never allow an unauthenticated visitor into checkout
   if (!state.currentUser) {
-    alert("Authentication Required: Please sign in or register before enrolling.");
+    alert("Authentication Required: Please sign in before enrolling.");
     toggleAuthModal(true);
     return;
   }
@@ -974,13 +968,6 @@ function openCheckoutModal(courseId) {
           </div>
         </div>
 
-        <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 space-y-1">
-          <div class="font-bold flex items-center gap-1.5">
-            <span>🔒</span> Supported Modes in Razorpay Popup:
-          </div>
-          <p class="text-[11px] text-blue-700">UPI (Google Pay, PhonePe, Paytm, QR), Credit/Debit Cards, and Net Banking.</p>
-        </div>
-
         <div class="pt-2 space-y-2">
           <button onclick="launchRazorpayCheckout(${subtotal}, ${tax}, ${total})" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-2 transition">
             <span>💳</span> Pay ₹${total.toLocaleString('en-IN')} via Razorpay
@@ -1005,7 +992,7 @@ function launchRazorpayCheckout(subtotal, tax, total) {
   if (RAZORPAY_KEY_ID === "rzp_test_YOUR_KEY_HERE" && !window.DYNAMIC_RAZORPAY_KEY) {
     const enteredKey = prompt("Enter your Razorpay Key ID (starts with rzp_test_ or rzp_live_):", "rzp_test_");
     if (!enteredKey || enteredKey === "rzp_test_") {
-      alert("Key ID required to launch real Razorpay window. You can use 'Simulate Instant Test Payment' in the meantime.");
+      alert("Key ID required. You can use 'Simulate Instant Test Payment' in the meantime.");
       return;
     }
     window.DYNAMIC_RAZORPAY_KEY = enteredKey.trim();
