@@ -12,7 +12,7 @@ const INITIAL_COURSES = [
     slug: "mechanical-engineering",
     title: "Mechanical: Industrial HVAC & Thermal Design",
     discipline: "HVAC, Thermodynamics & MEP",
-    price: 6499,
+    price: 10,
     validityDays: 365,
     instructorId: "educaresir99@gmail.com",
     instructorName: "Educare Faculty (educaresir99@gmail.com)",
