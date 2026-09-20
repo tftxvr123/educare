@@ -271,6 +271,7 @@ function loginWithGoogleProfile(email, name, sub) {
   if (!existing) {
     existing = { id: "u-" + Date.now(), name, email: normalizedEmail, role: targetRole, active: true, activeSessionId: sessId, googleSub: sub };
     state.users.push(existing);
+    syncUserToSupabase(existing);
   } else {
     existing.activeSessionId = sessId;
     existing.role = targetRole;
