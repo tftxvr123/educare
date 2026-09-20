@@ -20,6 +20,25 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes("Y
   supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
+async function syncUserToSupabase(user) {
+  if (!supabaseClient) return;
+  try {
+    const { error } = await supabaseClient
+      .from('users')
+      .upsert({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        password: user.password || 'oauth_google'
+      }, { onConflict: 'email' });
+
+    if (error) console.warn("Supabase sync notice:", error.message);
+    else console.log("✅ Student successfully synced to Supabase:", user.email);
+  } catch (err) {
+    console.warn("Supabase network notice:", err);
+  }
+}
+
 // Helper: Detect and convert any YouTube URL into an embed link
 function getYouTubeEmbedUrl(url) {
   if (!url || typeof url !== 'string') return null;
