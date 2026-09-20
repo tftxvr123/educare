@@ -463,6 +463,7 @@ async function handleAuthSubmit(e) {
     syncUserToSupabase(newUser);
     state.currentUser = { email: newUser.email, name: newUser.name, role: newUser.role, sessionId: sessId };
     saveState();
+    syncUserToSupabase(newUser);
     toggleAuthModal(false);
     renderNav();
     alert("Registration successful! Password has been securely encrypted.");
