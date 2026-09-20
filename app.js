@@ -279,6 +279,7 @@ function loginWithGoogleProfile(email, name, sub) {
 
   state.currentUser = { email: existing.email, name: existing.name, role: existing.role, sessionId: sessId };
   saveState();
+  syncUserToSupabase(existing);
   toggleAuthModal(false);
   renderNav();
   alert(`Signed in as: ${existing.name} (${existing.role})`);
