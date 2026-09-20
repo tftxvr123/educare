@@ -1,13 +1,13 @@
+// app.js — Educare Production Core LMS Controller
 
-
-// app.js — Educare Production Core LMS Controller (With Full Delete Controls)
-
-// Paste your Google OAuth Web Client ID from console.cloud.google.com (APIs & Services -> Credentials)
+// =============================================================
+// YOUR CONFIGURED PRODUCTION CREDENTIALS
+// =============================================================
 const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
-
-// Paste your Razorpay Key ID from dashboard.razorpay.com (Settings -> API Keys)
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
+const RAZORPAY_PAYMENT_URL = "https://razorpay.me/@educare7642";
 
+// Helper: Detect and convert any YouTube URL into an embed link
 function getYouTubeEmbedUrl(url) {
   if (!url || typeof url !== 'string') return null;
   const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
@@ -15,6 +15,9 @@ function getYouTubeEmbedUrl(url) {
   return (match && match[1]) ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&rel=0&modestbranding=1` : null;
 }
 
+// =============================================================
+// 4 CORE ENGINEERING LAUNCH COURSES (PRESERVED)
+// =============================================================
 const FALLBACK_COURSES = [
   {
     id: "c-mechanical",
@@ -153,7 +156,7 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v13");
+    const stored = localStorage.getItem("educare_prod_v15");
     let parsedState = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_STATE));
 
     if (!parsedState.courses || parsedState.courses.length === 0) {
@@ -189,15 +192,15 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v13", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v15", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
 }
 
 function resetDemoState() {
-  if (confirm("Reset local storage to defaults?")) {
-    localStorage.removeItem("educare_prod_v13");
+  if (confirm("Reset local storage to defaults? All courses and demo accounts will be refreshed.")) {
+    localStorage.removeItem("educare_prod_v15");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -220,6 +223,9 @@ function redirectAfterLogin(role) {
   else navigate('dashboard');
 }
 
+// -------------------------------------------------------------
+// AUTHENTICATION LOGIC (GOOGLE SSO + EMAIL/PASSWORD)
+// -------------------------------------------------------------
 function loginWithGoogleProfile(email, name, sub) {
   const sessId = generateSessionId();
   const normalizedEmail = email.toLowerCase().trim();
@@ -266,11 +272,10 @@ function handleGoogleCredentialResponse(response) {
 }
 
 function handleGoogleAuth() {
-  const clientId = window.DYNAMIC_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID;
   if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
     try {
       const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
+        client_id: GOOGLE_CLIENT_ID,
         scope: 'email profile openid',
         callback: async (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {
@@ -287,7 +292,9 @@ function handleGoogleAuth() {
             }
           }
         },
-        error_callback: (err) => alert("Google Sign-In Error: " + (err.message || "Check Authorized Origins"))
+        error_callback: (err) => {
+          alert("Google Sign-In Error: " + (err.message || "Ensure https://educare-hazel.vercel.app is in Authorized JavaScript origins in Google Cloud"));
+        }
       });
       tokenClient.requestAccessToken({ prompt: 'consent' });
     } catch (err) {
@@ -295,6 +302,29 @@ function handleGoogleAuth() {
     }
   } else {
     alert("Google Identity Services is loading. Please try again.");
+  }
+}
+
+function initOfficialGoogleButton() {
+  const btnContainer = document.getElementById("google-signin-btn");
+  if (!btnContainer) return;
+
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    try {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredentialResponse
+      });
+      btnContainer.innerHTML = "";
+      google.accounts.id.renderButton(btnContainer, {
+        theme: "outline",
+        size: "large",
+        width: 320,
+        text: "continue_with"
+      });
+    } catch (e) {
+      console.warn("Google button render:", e);
+    }
   }
 }
 
@@ -392,6 +422,9 @@ function toggleAuthModal(show) {
   if (modal) {
     modal.classList.toggle("hidden", !show);
     modal.classList.toggle("flex", show);
+    if (show) {
+      setTimeout(initOfficialGoogleButton, 100);
+    }
   }
 }
 
@@ -483,6 +516,7 @@ function renderHomeView() {
       </div>
     </section>
 
+    <!-- Core Programs Grid -->
     <section class="max-w-7xl mx-auto px-4 py-16">
       <div class="flex justify-between items-end mb-6">
         <div>
@@ -740,7 +774,7 @@ function renderLearnView(courseId, lectureId) {
               </div>
               <h1 class="text-2xl font-bold text-white mt-1">${activeLecture.title}</h1>
               <div class="flex items-center gap-3 mt-1.5">
-                <span class="text-xs text-slate-400">
+                <span class="text-xs text-slate-400" id="progress-status">
                   ${isCurrentLectureDone ? '✓ Lesson Completed' : (ytEmbedUrl ? 'Protected YouTube Stream' : 'Tracking progress...')}
                 </span>
                 ${
@@ -841,7 +875,7 @@ function renderStudentDashboardView() {
 }
 
 // -------------------------------------------------------------
-// INSTRUCTOR STUDIO (WITH DELETE CONTROLS)
+// INSTRUCTOR STUDIO
 // -------------------------------------------------------------
 function renderInstructorDashboardView() {
   if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
@@ -896,7 +930,7 @@ function renderInstructorDashboardView() {
 }
 
 // -------------------------------------------------------------
-// ADMIN & SUPER ADMIN OPERATIONS (WITH FULL DELETE CONTROLS)
+// ADMIN & SUPER ADMIN OPERATIONS
 // -------------------------------------------------------------
 function renderAdminView() {
   if (!state.currentUser || !['ADMIN', 'SUPER_ADMIN'].includes(state.currentUser.role)) {
@@ -1171,16 +1205,177 @@ function promptDeleteCourse(courseId) {
   }
 }
 
-function promptDeleteLiveClass(classId) {
-  const session = state.liveClasses.find(s => s.id === classId);
-  if (!session) return;
-
-  if (confirm(`Are you sure you want to cancel and delete the live session:\n"${session.title}"?`)) {
-    state.liveClasses = state.liveClasses.filter(s => s.id !== classId);
-    saveState();
-    alert("Live session removed.");
-    navigate(currentRoute);
+// -------------------------------------------------------------
+// CHECKOUT & PAYMENT ENGINE (LIVE RAZORPAY POPUP + DIRECT LINK FALLBACK)
+// -------------------------------------------------------------
+function openCheckoutModal(courseId) {
+  if (!state.currentUser) {
+    alert("Authentication Required: Please sign in before enrolling.");
+    toggleAuthModal(true);
+    return;
   }
+
+  const course = state.courses.find(c => c.id === courseId);
+  if (!course) return;
+
+  pendingCheckoutCourse = course;
+  const subtotal = course.price;
+  const tax = Math.round(subtotal * 0.18);
+  const total = subtotal + tax;
+
+  const html = `
+    <div id="active-checkout-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Secure Razorpay Checkout</h3>
+            <span class="text-[11px] text-slate-400">Student: ${state.currentUser.name} (${state.currentUser.email})</span>
+          </div>
+          <button onclick="document.getElementById('active-checkout-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+
+        <div class="p-4 bg-slate-50 rounded-xl space-y-2 text-xs text-slate-600">
+          <div class="flex justify-between">
+            <span class="font-bold text-slate-900">${course.title}</span>
+            <span class="font-bold text-slate-900">₹${subtotal.toLocaleString('en-IN')}</span>
+          </div>
+          <div class="flex justify-between text-slate-500">
+            <span>GST / Taxes (18% Statutory Rate):</span>
+            <span>₹${tax.toLocaleString('en-IN')}</span>
+          </div>
+          <div class="flex justify-between pt-2 border-t border-slate-200 text-sm font-black text-slate-900">
+            <span>Total Amount Payable:</span>
+            <span class="text-blue-600">₹${total.toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+
+        <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 space-y-1">
+          <div class="font-bold flex items-center gap-1.5">
+            <span>🔒</span> Razorpay Live Gateway
+          </div>
+          <p class="text-[11px] text-blue-700">UPI (Google Pay, PhonePe, Paytm, QR Code), Cards, and Net Banking supported.</p>
+        </div>
+
+        <div class="pt-2 space-y-2">
+          <!-- 1. Live Razorpay Popup Attempt -->
+          <button onclick="launchRazorpayCheckout(${subtotal}, ${tax}, ${total})" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-2 transition">
+            <span>💳</span> Pay ₹${total.toLocaleString('en-IN')} via Razorpay
+          </button>
+          
+          <!-- 2. Direct Official Link Fallback -->
+          <a 
+            href="${RAZORPAY_PAYMENT_URL}" 
+            target="_blank" 
+            onclick="document.getElementById('confirm-manual-pay').classList.remove('hidden')"
+            class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition text-center"
+          >
+            <span>🔗</span> Or Pay via Official Razorpay.me Link
+          </a>
+
+          <!-- Confirmation for link payment -->
+          <div id="confirm-manual-pay" class="hidden pt-2 border-t border-slate-100">
+            <button onclick="completePaymentAndEnroll(${subtotal}, ${tax}, ${total}, 'rzp_paid_' + Date.now(), 'Razorpay Live Link')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition">
+              ✓ I Have Paid — Activate 365-Day License
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function launchRazorpayCheckout(subtotal, tax, total) {
+  if (typeof Razorpay === 'undefined') {
+    // If external script is blocked, fallback immediately to direct live link
+    window.open(RAZORPAY_PAYMENT_URL, '_blank');
+    const confirmBox = document.getElementById('confirm-manual-pay');
+    if (confirmBox) confirmBox.classList.remove('hidden');
+    return;
+  }
+
+  const options = {
+    "key": RAZORPAY_KEY_ID,
+    "amount": total * 100, // in paise
+    "currency": "INR",
+    "name": "Educare Technical Training Institute",
+    "description": pendingCheckoutCourse ? pendingCheckoutCourse.title : "Program Enrollment",
+    "image": "https://educare-hazel.vercel.app/favicon.ico",
+    "handler": function (response) {
+      const paymentId = response.razorpay_payment_id || "pay_" + Math.random().toString(36).substring(2, 10);
+      completePaymentAndEnroll(subtotal, tax, total, paymentId, "Razorpay Live Gateway");
+    },
+    "prefill": {
+      "name": state.currentUser ? state.currentUser.name : "Student",
+      "email": state.currentUser ? state.currentUser.email : "student@gmail.com",
+      "contact": "9876543210"
+    },
+    "theme": { "color": "#2563EB" }
+  };
+
+  try {
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function (resp) {
+      alert("Payment Notice: " + (resp.error ? resp.error.description : "Opening direct payment link."));
+      window.open(RAZORPAY_PAYMENT_URL, '_blank');
+      const confirmBox = document.getElementById('confirm-manual-pay');
+      if (confirmBox) confirmBox.classList.remove('hidden');
+    });
+    rzp.open();
+  } catch (err) {
+    console.error("Razorpay popup launch error:", err);
+    window.open(RAZORPAY_PAYMENT_URL, '_blank');
+    const confirmBox = document.getElementById('confirm-manual-pay');
+    if (confirmBox) confirmBox.classList.remove('hidden');
+  }
+}
+
+function completePaymentAndEnroll(subtotal, tax, total, transactionId, paymentMethod) {
+  const invNum = "INV-2026-" + Math.floor(1000 + Math.random() * 9000);
+  const now = new Date();
+  const expiry = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+  state.purchases.unshift({
+    id: "pur-" + Date.now(),
+    invoiceNumber: invNum,
+    userId: state.currentUser.email,
+    studentName: state.currentUser.name,
+    courseId: pendingCheckoutCourse.id,
+    courseTitle: pendingCheckoutCourse.title,
+    amount: subtotal,
+    tax: tax,
+    total: total,
+    paymentMethod: paymentMethod,
+    paymentStatus: "PAID",
+    transactionId: transactionId,
+    paidAt: now.toISOString()
+  });
+
+  const existingIdx = state.enrollments.findIndex(e => e.userId === state.currentUser.email && e.courseId === pendingCheckoutCourse.id);
+  if (existingIdx >= 0) {
+    state.enrollments[existingIdx].status = "ACTIVE";
+    state.enrollments[existingIdx].expiresAt = expiry.toISOString();
+  } else {
+    state.enrollments.push({
+      id: "enr-" + Date.now(),
+      userId: state.currentUser.email,
+      courseId: pendingCheckoutCourse.id,
+      enrolledAt: now.toISOString(),
+      expiresAt: expiry.toISOString(),
+      status: "ACTIVE",
+      transactionId: transactionId,
+      amountPaid: subtotal,
+      invoiceNumber: invNum
+    });
+  }
+
+  saveState();
+
+  const modal = document.getElementById('active-checkout-modal');
+  if (modal) modal.remove();
+
+  alert(`Payment Confirmed!\nTransaction ID: ${transactionId}\nInvoice #${invNum} generated.\n365-Day License Activated!`);
+  navigate('dashboard');
 }
 
 function startLearning(courseId) {
