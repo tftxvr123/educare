@@ -7,6 +7,19 @@ const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.goo
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
 const RAZORPAY_PAYMENT_URL = "https://razorpay.me/@educare7642";
 
+// =============================================================
+// SUPABASE CENTRAL DATABASE CONFIGURATION
+// =============================================================
+const SUPABASE_URL = "https://qpugkogcecliqjpvmnam.supabase.co"; // Paste your Supabase Project URL
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdWdrb2djZWNsaXFqcHZtbmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MDI3NzAsImV4cCI6MjEwNTQ3ODc3MH0.ue2_1D_1zwgJG3ULHOHIPoQR3TXU70_2gXqYcxhpPzg
+"; // Paste your Supabase anon public key
+
+// Initialize Supabase Client
+let supabaseClient = null;
+if (typeof supabase !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes("YOUR_PROJECT_ID")) {
+  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
 // Helper: Detect and convert any YouTube URL into an embed link
 function getYouTubeEmbedUrl(url) {
   if (!url || typeof url !== 'string') return null;
