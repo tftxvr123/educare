@@ -263,6 +263,40 @@ function parseJwt(token) {
   }
 }
 
+
+// =============================================================
+// NATIVE PASSWORD ENCRYPTION (SHA-256 VIA WEB CRYPTO API)
+// =============================================================
+async function hashPassword(plainText) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plainText);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Verifies encrypted password and auto-migrates any legacy plain-text passwords
+async function verifyAndMigratePassword(user, enteredPassword) {
+  if (!user.password) return true; // Accounts created via Google SSO
+  
+  const enteredHash = await hashPassword(enteredPassword);
+
+  // 1. Password already encrypted as SHA-256 hash
+  if (user.password === enteredHash) {
+    return true;
+  }
+
+  // 2. Backward-compatibility: Plain-text match -> automatically upgrade to hash
+  if (user.password === enteredPassword) {
+    user.password = enteredHash;
+    saveState(); // Permanently save as encrypted hash
+    return true;
+  }
+
+  return false;
+}
+
+
 function handleGoogleCredentialResponse(response) {
   if (!response || !response.credential) return;
   const profile = parseJwt(response.credential);
