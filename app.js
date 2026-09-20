@@ -458,6 +458,7 @@ async function handleAuthSubmit(e) {
       activeSessionId: sessId
     };
     state.users.push(newUser);
+    syncUserToSupabase(newUser);
     state.currentUser = { email: newUser.email, name: newUser.name, role: newUser.role, sessionId: sessId };
     saveState();
     toggleAuthModal(false);
