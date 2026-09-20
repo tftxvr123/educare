@@ -1205,6 +1205,39 @@ function promptDeleteCourse(courseId) {
   }
 }
 
+// 5. Delete a registered student and clean up all their records
+function promptDeleteStudent(studentId) {
+  const student = state.users.find(u => u.id === studentId);
+  if (!student) return;
+
+  // Prevent accidental self-deletion
+  if (state.currentUser && state.currentUser.email === student.email) {
+    alert("Action Prohibited: You cannot delete your own active account.");
+    return;
+  }
+
+  const confirmMsg = `Are you sure you want to PERMANENTLY delete student:\n"${student.name}" (${student.email})?\n\nThis will also remove all their active course enrollments and progress records.`;
+  if (!confirm(confirmMsg)) return;
+
+  // 1. Remove from user directory
+  state.users = state.users.filter(u => u.id !== studentId);
+
+  // 2. Remove any course enrollments
+  state.enrollments = state.enrollments.filter(e => e.userId !== student.email);
+
+  // 3. Remove progress records and quiz history
+  if (state.progress && state.progress[student.email]) {
+    delete state.progress[student.email];
+  }
+  if (state.quizAttempts && state.quizAttempts[student.email]) {
+    delete state.quizAttempts[student.email];
+  }
+
+  saveState();
+  alert(`Student "${student.name}" and all associated records have been removed.`);
+  navigate(currentRoute);
+}
+
 // -------------------------------------------------------------
 // CHECKOUT & PAYMENT ENGINE (LIVE RAZORPAY POPUP + DIRECT LINK FALLBACK)
 // -------------------------------------------------------------
