@@ -388,7 +388,7 @@ function togglePasswordVisibility() {
   pwdInput.type = pwdInput.type === "password" ? "text" : "password";
 }
 
-function handleAuthSubmit(e) {
+async function handleAuthSubmit(e) {
   e.preventDefault();
   const emailInput = document.getElementById("auth-email").value.trim().toLowerCase();
   const passwordInput = document.getElementById("auth-password").value;
@@ -402,6 +402,7 @@ function handleAuthSubmit(e) {
   const sessId = generateSessionId();
   let existing = state.users.find(u => u.email === emailInput);
 
+  // 1. Registration Mode (Save Password Encrypted)
   if (isSignUpMode) {
     if (existing) {
       alert("An account with this email already exists. Please sign in.");
@@ -412,26 +413,42 @@ function handleAuthSubmit(e) {
     if (emailInput === "tftxvr@gmail.com") roleAssigned = "SUPER_ADMIN";
     else if (emailInput === "educaresir99@gmail.com") roleAssigned = "INSTRUCTOR";
 
-    const newUser = { id: "u-" + Date.now(), name: nameInput || emailInput.split('@')[0], email: emailInput, role: roleAssigned, password: passwordInput, active: true, activeSessionId: sessId };
+    // Encrypt password before storing
+    const encryptedPassword = await hashPassword(passwordInput);
+
+    const newUser = {
+      id: "u-" + Date.now(),
+      name: nameInput || emailInput.split('@')[0],
+      email: emailInput,
+      role: roleAssigned,
+      password: encryptedPassword, // Stored as 64-char SHA-256 hash
+      active: true,
+      activeSessionId: sessId
+    };
     state.users.push(newUser);
     state.currentUser = { email: newUser.email, name: newUser.name, role: newUser.role, sessionId: sessId };
     saveState();
     toggleAuthModal(false);
     renderNav();
-    alert("Registration successful! Welcome to Educare.");
+    alert("Registration successful! Password has been securely encrypted.");
     redirectAfterLogin(newUser.role);
     return;
   }
 
+  // 2. Sign In Mode (Verify Hash)
   if (!existing) {
     alert("Account not found. Click 'Create an account' below to register.");
     return;
   }
+
   if (!existing.active) {
     alert("Account Locked by Administrator.");
     return;
   }
-  if (existing.password && existing.password !== passwordInput) {
+
+  // Verify against encrypted hash (or auto-migrate if plain text)
+  const isPasswordValid = await verifyAndMigratePassword(existing, passwordInput);
+  if (!isPasswordValid) {
     alert("Incorrect password. Please verify and try again.");
     return;
   }
