@@ -1,18 +1,17 @@
-// app.js — Educare Production Core LMS Controller
+// app.js — Educare Production Core LMS Controller (Complete & Fully Restored)
 
 // =============================================================
-// YOUR CONFIGURED PRODUCTION CREDENTIALS
+// YOUR CONFIGURED PRODUCTION CREDENTIALS (PRESERVED)
 // =============================================================
 const GOOGLE_CLIENT_ID = "927965375944-06v891q36rs6vnu9stasjuk0kq8mli33.apps.googleusercontent.com";
 const RAZORPAY_KEY_ID = "rzp_live_TdsETGp7PHolSJ";
 const RAZORPAY_PAYMENT_URL = "https://razorpay.me/@educare7642";
 
 // =============================================================
-// SUPABASE CENTRAL DATABASE CONFIGURATION
+// SUPABASE CENTRAL DATABASE CONFIGURATION (SYNTAX FIXED)
 // =============================================================
-const SUPABASE_URL = "https://qpugkogcecliqjpvmnam.supabase.co"; // Paste your Supabase Project URL
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdWdrb2djZWNsaXFqcHZtbmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MDI3NzAsImV4cCI6MjEwNTQ3ODc3MH0.ue2_1D_1zwgJG3ULHOHIPoQR3TXU70_2gXqYcxhpPzg
-"; // Paste your Supabase anon public key
+const SUPABASE_URL = "https://qpugkogcecliqjpvmnam.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwdWdrb2djZWNsaXFqcHZtbmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MDI3NzAsImV4cCI6MjEwNTQ3ODc3MH0.ue2_1D_1zwgJG3ULHOHIPoQR3TXU70_2gXqYcxhpPzg";
 
 // Initialize Supabase Client
 let supabaseClient = null;
@@ -20,6 +19,7 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes("Y
   supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
+// Background Supabase Sync Helper
 async function syncUserToSupabase(user) {
   if (!supabaseClient) return;
   try {
@@ -158,6 +158,61 @@ const FALLBACK_COURSES = [
   }
 ];
 
+// =============================================================
+// INSTITUTION PROFILE, NOTICES & POLICIES (PRESERVED)
+// =============================================================
+const FALLBACK_POLICIES = {
+  institution: {
+    name: "Educare Technical Training Institute",
+    tagline: "Premier Vocational & Industrial Engineering Academy",
+    about: "Educare is an accredited technical training academy delivering hands-on engineering programs in Mechanical HVAC, Electrical Systems, Plumbing (PHE), and AutoCAD/Revit BIM Modeling. Developed by practicing senior consultants to build job-ready competencies.",
+    regNumber: "EDU-IND-2026-8842",
+    stats: [
+      { label: "Engineering Disciplines", value: "4 Core Programs" },
+      { label: "Accreditation", value: "ISO 9001:2015" },
+      { label: "Course Validity", value: "365 Days (1 Year)" },
+      { label: "Database Sync", value: "Live Centralized Supabase" }
+    ]
+  },
+  contact: {
+    admissionsEmail: "admissions@educare.org.in",
+    supportEmail: "support@educare.org.in",
+    adminEmail: "admin@educare.org.in",
+    phone: "+91 80 4567 8900",
+    hours: "Monday – Saturday: 9:00 AM – 6:30 PM IST",
+    address: "Educare Campus, Tech Hub Tower, Outer Ring Road, Bengaluru, Karnataka, India"
+  },
+  announcements: [
+    { id: "ann-1", title: "Batch 2026 Admissions Open for MEP Disciplines", date: "Active Session", badge: "Admissions", content: "Enrollment active with instant online access and printable GST tax invoices." },
+    { id: "ann-2", title: "Course Validity Policy: 1-Year Unrestricted Access", date: "Policy", badge: "Notice", content: "All course enrollments remain active for exactly 365 days from enrollment confirmation." }
+  ],
+  privacyPolicy: {
+    title: "Privacy Policy & Data Security",
+    lastUpdated: "Version 2.0",
+    sections: [
+      { heading: "1. Data Protection", body: "Educare encrypts all credentials using SHA-256 and never stores unencrypted passwords." },
+      { heading: "2. Student Records", body: "Enrollment and progress data are securely synced to your centralized database." }
+    ]
+  },
+  termsConditions: {
+    title: "Terms & Conditions of Service",
+    lastUpdated: "Version 2.0",
+    sections: [
+      { heading: "1. 365 Days License", body: "Enrollment grants 1-year unlimited access to all course lectures and materials." }
+    ]
+  },
+  refundPolicy: {
+    title: "Refund & Cancellation Policy",
+    lastUpdated: "Version 2.0",
+    sections: [
+      { heading: "1. 7-Day Refund", body: "Students may request a refund within 7 calendar days of enrollment if less than 20% of lectures have been watched." }
+    ]
+  }
+};
+
+const activePolicies = (typeof window.POLICIES_DATA !== 'undefined') ? window.POLICIES_DATA : (typeof POLICIES_DATA !== 'undefined' ? POLICIES_DATA : FALLBACK_POLICIES);
+
+// Default State (Edwin = Super Admin, educaresir99 = Instructor)
 const DEFAULT_STATE = {
   currentUser: null,
   users: [
@@ -188,7 +243,7 @@ const DEFAULT_STATE = {
 
 function loadState() {
   try {
-    const stored = localStorage.getItem("educare_prod_v15");
+    const stored = localStorage.getItem("educare_prod_v16");
     let parsedState = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_STATE));
 
     if (!parsedState.courses || parsedState.courses.length === 0) {
@@ -224,15 +279,15 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem("educare_prod_v15", JSON.stringify(state));
+    localStorage.setItem("educare_prod_v16", JSON.stringify(state));
   } catch (err) {
     console.error("Storage error:", err);
   }
 }
 
 function resetDemoState() {
-  if (confirm("Reset local storage to defaults? All courses and demo accounts will be refreshed.")) {
-    localStorage.removeItem("educare_prod_v15");
+  if (confirm("Reset local storage to production defaults? All courses and student accounts will be restored.")) {
+    localStorage.removeItem("educare_prod_v16");
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     saveState();
     navigate('home');
@@ -256,6 +311,30 @@ function redirectAfterLogin(role) {
 }
 
 // -------------------------------------------------------------
+// NATIVE PASSWORD ENCRYPTION (SHA-256 VIA WEB CRYPTO API)
+// -------------------------------------------------------------
+async function hashPassword(plainText) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plainText);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyAndMigratePassword(user, enteredPassword) {
+  if (!user.password) return true;
+  const enteredHash = await hashPassword(enteredPassword);
+
+  if (user.password === enteredHash) return true;
+  if (user.password === enteredPassword) {
+    user.password = enteredHash;
+    saveState();
+    return true;
+  }
+  return false;
+}
+
+// -------------------------------------------------------------
 // AUTHENTICATION LOGIC (GOOGLE SSO + EMAIL/PASSWORD)
 // -------------------------------------------------------------
 function loginWithGoogleProfile(email, name, sub) {
@@ -271,7 +350,6 @@ function loginWithGoogleProfile(email, name, sub) {
   if (!existing) {
     existing = { id: "u-" + Date.now(), name, email: normalizedEmail, role: targetRole, active: true, activeSessionId: sessId, googleSub: sub };
     state.users.push(existing);
-    syncUserToSupabase(existing);
   } else {
     existing.activeSessionId = sessId;
     existing.role = targetRole;
@@ -296,40 +374,6 @@ function parseJwt(token) {
     return null;
   }
 }
-
-
-// =============================================================
-// NATIVE PASSWORD ENCRYPTION (SHA-256 VIA WEB CRYPTO API)
-// =============================================================
-async function hashPassword(plainText) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(plainText);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// Verifies encrypted password and auto-migrates any legacy plain-text passwords
-async function verifyAndMigratePassword(user, enteredPassword) {
-  if (!user.password) return true; // Accounts created via Google SSO
-  
-  const enteredHash = await hashPassword(enteredPassword);
-
-  // 1. Password already encrypted as SHA-256 hash
-  if (user.password === enteredHash) {
-    return true;
-  }
-
-  // 2. Backward-compatibility: Plain-text match -> automatically upgrade to hash
-  if (user.password === enteredPassword) {
-    user.password = enteredHash;
-    saveState(); // Permanently save as encrypted hash
-    return true;
-  }
-
-  return false;
-}
-
 
 function handleGoogleCredentialResponse(response) {
   if (!response || !response.credential) return;
@@ -361,7 +405,7 @@ function handleGoogleAuth() {
           }
         },
         error_callback: (err) => {
-          alert("Google Sign-In Error: " + (err.message || "Ensure https://educare-hazel.vercel.app is in Authorized JavaScript origins in Google Cloud"));
+          alert("Google Sign-In Error: " + (err.message || "Ensure https://educare-hazel.vercel.app is in Authorized JavaScript origins"));
         }
       });
       tokenClient.requestAccessToken({ prompt: 'consent' });
@@ -436,7 +480,6 @@ async function handleAuthSubmit(e) {
   const sessId = generateSessionId();
   let existing = state.users.find(u => u.email === emailInput);
 
-  // 1. Registration Mode (Save Password Encrypted)
   if (isSignUpMode) {
     if (existing) {
       alert("An account with this email already exists. Please sign in.");
@@ -447,7 +490,6 @@ async function handleAuthSubmit(e) {
     if (emailInput === "tftxvr@gmail.com") roleAssigned = "SUPER_ADMIN";
     else if (emailInput === "educaresir99@gmail.com") roleAssigned = "INSTRUCTOR";
 
-    // Encrypt password before storing
     const encryptedPassword = await hashPassword(passwordInput);
 
     const newUser = {
@@ -455,34 +497,30 @@ async function handleAuthSubmit(e) {
       name: nameInput || emailInput.split('@')[0],
       email: emailInput,
       role: roleAssigned,
-      password: encryptedPassword, // Stored as 64-char SHA-256 hash
+      password: encryptedPassword,
       active: true,
       activeSessionId: sessId
     };
     state.users.push(newUser);
-    syncUserToSupabase(newUser);
     state.currentUser = { email: newUser.email, name: newUser.name, role: newUser.role, sessionId: sessId };
     saveState();
     syncUserToSupabase(newUser);
     toggleAuthModal(false);
     renderNav();
-    alert("Registration successful! Password has been securely encrypted.");
+    alert("Registration successful! Synced to central database.");
     redirectAfterLogin(newUser.role);
     return;
   }
 
-  // 2. Sign In Mode (Verify Hash)
   if (!existing) {
     alert("Account not found. Click 'Create an account' below to register.");
     return;
   }
-
   if (!existing.active) {
     alert("Account Locked by Administrator.");
     return;
   }
 
-  // Verify against encrypted hash (or auto-migrate if plain text)
   const isPasswordValid = await verifyAndMigratePassword(existing, passwordInput);
   if (!isPasswordValid) {
     alert("Incorrect password. Please verify and try again.");
@@ -492,6 +530,7 @@ async function handleAuthSubmit(e) {
   existing.activeSessionId = sessId;
   state.currentUser = { email: existing.email, name: existing.name, role: existing.role, sessionId: sessId };
   saveState();
+  syncUserToSupabase(existing);
   toggleAuthModal(false);
   renderNav();
   redirectAfterLogin(existing.role);
@@ -573,8 +612,13 @@ function navigate(route, params = {}) {
   if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
 
+// -------------------------------------------------------------
+// HOME VIEW (RESTORED WITH HERO, METRICS & NOTICE BOARD)
+// -------------------------------------------------------------
 function renderHomeView() {
+  const p = activePolicies.institution || {};
   return `
+    <!-- Hero Banner Section -->
     <section class="bg-slate-900 text-white py-20 px-4 text-center">
       <div class="max-w-4xl mx-auto space-y-6">
         <span class="inline-block text-xs uppercase tracking-widest px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-400/30 font-semibold">
@@ -599,6 +643,48 @@ function renderHomeView() {
               ? `<button onclick="navigate('dashboard')" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition">Student Dashboard</button>`
               : `<button onclick="toggleAuthModal(true)" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition">Sign In to Platform</button>`
           }
+        </div>
+      </div>
+    </section>
+
+    <!-- Institution Overview & Metrics Section (Restored) -->
+    <section class="bg-white border-b border-slate-200 py-12 px-4">
+      <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
+        <div>
+          <span class="text-xs uppercase font-bold text-blue-600 tracking-wider">About Our Training Academy</span>
+          <h2 class="text-2xl font-bold text-slate-900 mt-1">${p.name || 'Educare Training Institute'}</h2>
+          <p class="text-slate-600 text-sm mt-3 leading-relaxed">${p.about || 'Specialized technical engineering training.'}</p>
+          <div class="mt-4 text-xs text-slate-500 font-mono">Accreditation: ${p.regNumber || 'ISO 9001:2015'}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          ${(p.stats || []).map(s => `
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div class="text-xl font-extrabold text-blue-600">${s.value}</div>
+              <div class="text-xs text-slate-500 mt-1">${s.label}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Notice Board & Announcements Section (Restored) -->
+    <section class="max-w-6xl mx-auto px-4 pt-12">
+      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <i data-lucide="bell" class="w-5 h-5 text-blue-600"></i>
+          <h3 class="font-bold text-slate-900 text-base">Institute Notice Board &amp; Live Schedules</h3>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          ${(activePolicies.announcements || []).map(a => `
+            <div class="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+              <div class="flex items-center justify-between text-[11px] mb-1">
+                <span class="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">${a.badge}</span>
+                <span class="text-slate-400 font-medium">${a.date}</span>
+              </div>
+              <h4 class="font-bold text-sm text-slate-900 mt-1">${a.title}</h4>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">${a.content}</p>
+            </div>
+          `).join('')}
         </div>
       </div>
     </section>
@@ -749,6 +835,7 @@ function renderCourseDetailView(courseId) {
         </div>
       </div>
 
+      <!-- Curriculum Structure -->
       <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
         <h2 class="text-xl font-bold text-slate-900">Curriculum Structure</h2>
         <div class="space-y-4">
@@ -780,6 +867,9 @@ function renderCourseDetailView(courseId) {
   `;
 }
 
+// -------------------------------------------------------------
+// HYBRID VIDEO PLAYER (WITH CLICK-SHIELD & COMPLETION TRACKING)
+// -------------------------------------------------------------
 function renderLearnView(courseId, lectureId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return `<div class="p-8">Course not found.</div>`;
@@ -833,6 +923,7 @@ function renderLearnView(courseId, lectureId) {
                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                      allowfullscreen
                    ></iframe>
+                   <!-- Transparent Shields: 0% Quality Loss, Blocks Clicking Away -->
                    <div class="absolute top-0 left-0 right-0 h-16 z-20 bg-transparent cursor-default" onclick="event.stopPropagation()"></div>
                    <div class="absolute bottom-0 left-0 w-28 h-12 z-20 bg-transparent cursor-default" onclick="event.stopPropagation()"></div>
                    <div class="absolute bottom-0 right-0 w-44 h-12 z-20 bg-transparent cursor-default" onclick="event.stopPropagation()"></div>
@@ -862,7 +953,7 @@ function renderLearnView(courseId, lectureId) {
               <h1 class="text-2xl font-bold text-white mt-1">${activeLecture.title}</h1>
               <div class="flex items-center gap-3 mt-1.5">
                 <span class="text-xs text-slate-400" id="progress-status">
-                  ${isCurrentLectureDone ? '✓ Lesson Completed' : (ytEmbedUrl ? 'Protected YouTube Stream' : 'Tracking progress...')}
+                  ${isCurrentLectureDone ? '✓ Lesson Completed' : (ytEmbedUrl ? 'Protected Stream' : 'Tracking progress...')}
                 </span>
                 ${
                   state.currentUser && state.currentUser.role === 'STUDENT'
@@ -921,24 +1012,31 @@ function toggleLectureCompletion(courseId, lectureId) {
   navigate('learn', { courseId, lectureId });
 }
 
+// -------------------------------------------------------------
+// STUDENT DASHBOARD
+// -------------------------------------------------------------
 function renderStudentDashboardView() {
   if (!state.currentUser) return `<div class="p-8 text-center">Please sign in.</div>`;
   const userEnrollments = state.enrollments.filter(e => e.userId === state.currentUser?.email);
   const enrolledCourses = state.courses.filter(c => userEnrollments.some(e => e.courseId === c.id));
   const userProgress = state.progress[state.currentUser?.email] || {};
+  const userPurchases = state.purchases.filter(p => p.userId === state.currentUser?.email);
 
   return `
     <div class="max-w-7xl mx-auto px-4 py-12 space-y-10">
       <div>
         <span class="text-xs uppercase font-bold text-emerald-600 tracking-wider">Student Academic Center</span>
         <h1 class="text-3xl font-extrabold text-slate-900 mt-1">Welcome back, ${state.currentUser?.name || 'Student'}</h1>
+        <p class="text-slate-500 text-sm mt-1">Manage active engineering courses, join live class sessions, review tax invoices, and export certificates.</p>
       </div>
 
       <div class="grid md:grid-cols-2 gap-6">
         ${enrolledCourses.map(course => {
+          const enr = userEnrollments.find(e => e.courseId === course.id);
           const lectures = course.sections.flatMap(s => s.lectures);
+          const total = lectures.length;
           const completed = lectures.filter(l => userProgress[l.id]?.completed).length;
-          const pct = lectures.length > 0 ? Math.round((completed / lectures.length) * 100) : 0;
+          const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
           const nextLecture = lectures.find(l => !userProgress[l.id]?.completed) || lectures[0];
 
           return `
@@ -952,17 +1050,57 @@ function renderStudentDashboardView() {
                 <button onclick="navigate('learn', { courseId: '${course.id}', lectureId: '${nextLecture?.id}' })" class="flex-1 py-2.5 bg-slate-900 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
                   <i data-lucide="play" class="w-4 h-4 fill-current"></i> Resume Learning (${pct}%)
                 </button>
+                ${pct === 100 ? `
+                  <button onclick="showCertificateModal('${course.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="award" class="w-4 h-4"></i> Certificate
+                  </button>
+                ` : ''}
               </div>
             </div>
           `;
         }).join('')}
+      </div>
+
+      <!-- Invoices & Tax Receipts (Restored) -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800">
+          Billing History &amp; Official Invoices
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+              <tr>
+                <th class="px-6 py-3">Invoice Ref</th>
+                <th class="px-6 py-3">Course</th>
+                <th class="px-6 py-3">Amount</th>
+                <th class="px-6 py-3">Date</th>
+                <th class="px-6 py-3 text-right">Receipt</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${userPurchases.length === 0 ? `
+                <tr><td colspan="5" class="px-6 py-4 text-center text-slate-400">No invoices generated yet.</td></tr>
+              ` : userPurchases.map(p => `
+                <tr>
+                  <td class="px-6 py-4 font-mono font-bold text-slate-800">${p.invoiceNumber}</td>
+                  <td class="px-6 py-4">${p.courseTitle}</td>
+                  <td class="px-6 py-4 font-bold text-slate-900">₹${p.total.toLocaleString('en-IN')}</td>
+                  <td class="px-6 py-4">${new Date(p.paidAt).toLocaleDateString()}</td>
+                  <td class="px-6 py-4 text-right">
+                    <button onclick="showInvoiceModal('${p.id}')" class="text-blue-600 font-bold hover:underline">Download Tax Invoice</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   `;
 }
 
 // -------------------------------------------------------------
-// INSTRUCTOR STUDIO
+// INSTRUCTOR STUDIO (educaresir99@gmail.com PORTAL)
 // -------------------------------------------------------------
 function renderInstructorDashboardView() {
   if (!state.currentUser || state.currentUser.role !== 'INSTRUCTOR') {
@@ -1060,7 +1198,7 @@ function renderAdminView() {
         </div>
       </div>
 
-      <!-- Student Directory -->
+      <!-- Student Directory (With Delete Controls) -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
           <span>Registered Students Directory (${studentsList.length} Students)</span>
@@ -1078,7 +1216,9 @@ function renderAdminView() {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              ${studentsList.map(s => {
+              ${studentsList.length === 0 ? `
+                <tr><td colspan="5" class="px-6 py-4 text-center text-slate-400">No students registered yet.</td></tr>
+              ` : studentsList.map(s => {
                 const studentEnrollments = state.enrollments.filter(e => e.userId === s.email && e.status === 'ACTIVE');
                 const courseNames = studentEnrollments.map(enr => {
                   const c = state.courses.find(course => course.id === enr.courseId);
@@ -1098,10 +1238,10 @@ function renderAdminView() {
                         ${s.active ? 'Active' : 'Locked'}
                       </span>
                     </td>
-                   <td class="px-6 py-4 text-right space-x-3">
-                   <button onclick="toggleUserStatus('${s.id}')" class="text-blue-600 font-bold hover:underline">${s.active ? 'Lock Account' : 'Unlock Account'}</button>
-                  <button onclick="promptDeleteStudent('${s.id}')" class="text-rose-600 font-bold hover:underline">🗑 Delete Student</button>
-                   </td>
+                    <td class="px-6 py-4 text-right space-x-3">
+                      <button onclick="toggleUserStatus('${s.id}')" class="text-blue-600 font-bold hover:underline">${s.active ? 'Lock Account' : 'Unlock Account'}</button>
+                      <button onclick="promptDeleteStudent('${s.id}')" class="text-rose-600 font-bold hover:underline">🗑 Delete Student</button>
+                    </td>
                   </tr>
                 `;
               }).join('')}
@@ -1152,7 +1292,7 @@ function renderAdminView() {
 function promptAddSection(courseId) {
   const course = state.courses.find(c => c.id === courseId);
   if (!course) return;
-  const title = prompt("Enter Module Title (e.g., Module 3: Hydronics):");
+  const title = prompt("Enter Module Title (e.g., Module 3: Advanced Hydronics):");
   if (!title) return;
   course.sections.push({ id: "s-" + Date.now(), title, lectures: [] });
   saveState();
@@ -1169,7 +1309,7 @@ function promptAddLecture(courseId) {
   const title = prompt("Enter Lecture / Video Title:");
   if (!title) return;
   const videoUrl = prompt("Enter Video Link (YouTube Unlisted link OR direct MP4 link):") || "https://vjs.zencdn.net/v/oceans.mp4";
-  const duration = parseInt(prompt("Enter duration in seconds (e.g., 60):", "60"), 10) || 60;
+  const duration = parseInt(prompt("Enter duration in seconds:", "60"), 10) || 60;
 
   course.sections[0].lectures.push({ id: "l-" + Date.now(), title, duration, videoUrl });
   saveState();
@@ -1210,7 +1350,7 @@ function toggleUserStatus(userId) {
 }
 
 // -------------------------------------------------------------
-// DELETION CONTROLLERS (WITH SAFETY CONFIRMATION)
+// DELETION CONTROLLERS (WITH CONFIRMATION)
 // -------------------------------------------------------------
 function promptDeleteLecture(courseId) {
   const course = state.courses.find(c => c.id === courseId);
@@ -1243,7 +1383,7 @@ function promptDeleteLecture(courseId) {
   }
 
   const target = allLectures[index];
-  if (confirm(`Are you sure you want to PERMANENTLY delete lecture:\n"${target.lec.title}"?\n\nThis action cannot be undone.`)) {
+  if (confirm(`Are you sure you want to PERMANENTLY delete lecture:\n"${target.lec.title}"?\n\nThis cannot be undone.`)) {
     target.sec.lectures.splice(target.lIdx, 1);
     saveState();
     alert(`Lecture "${target.lec.title}" deleted.`);
@@ -1293,33 +1433,23 @@ function promptDeleteCourse(courseId) {
   }
 }
 
-// 5. Delete a registered student and clean up all their records
 function promptDeleteStudent(studentId) {
   const student = state.users.find(u => u.id === studentId);
   if (!student) return;
 
-  // Prevent accidental self-deletion
   if (state.currentUser && state.currentUser.email === student.email) {
     alert("Action Prohibited: You cannot delete your own active account.");
     return;
   }
 
-  const confirmMsg = `Are you sure you want to PERMANENTLY delete student:\n"${student.name}" (${student.email})?\n\nThis will also remove all their active course enrollments and progress records.`;
+  const confirmMsg = `Are you sure you want to PERMANENTLY delete student:\n"${student.name}" (${student.email})?\n\nThis will remove all their enrollments and progress records.`;
   if (!confirm(confirmMsg)) return;
 
-  // 1. Remove from user directory
   state.users = state.users.filter(u => u.id !== studentId);
-
-  // 2. Remove any course enrollments
   state.enrollments = state.enrollments.filter(e => e.userId !== student.email);
 
-  // 3. Remove progress records and quiz history
-  if (state.progress && state.progress[student.email]) {
-    delete state.progress[student.email];
-  }
-  if (state.quizAttempts && state.quizAttempts[student.email]) {
-    delete state.quizAttempts[student.email];
-  }
+  if (state.progress && state.progress[student.email]) delete state.progress[student.email];
+  if (state.quizAttempts && state.quizAttempts[student.email]) delete state.quizAttempts[student.email];
 
   saveState();
   alert(`Student "${student.name}" and all associated records have been removed.`);
@@ -1327,7 +1457,7 @@ function promptDeleteStudent(studentId) {
 }
 
 // -------------------------------------------------------------
-// CHECKOUT & PAYMENT ENGINE (LIVE RAZORPAY POPUP + DIRECT LINK FALLBACK)
+// CHECKOUT & PAYMENT ENGINE (RAZORPAY LINK + POPUP)
 // -------------------------------------------------------------
 function openCheckoutModal(courseId) {
   if (!state.currentUser) {
@@ -1408,7 +1538,6 @@ function openCheckoutModal(courseId) {
 
 function launchRazorpayCheckout(subtotal, tax, total) {
   if (typeof Razorpay === 'undefined') {
-    // If external script is blocked, fallback immediately to direct live link
     window.open(RAZORPAY_PAYMENT_URL, '_blank');
     const confirmBox = document.getElementById('confirm-manual-pay');
     if (confirmBox) confirmBox.classList.remove('hidden');
@@ -1417,7 +1546,7 @@ function launchRazorpayCheckout(subtotal, tax, total) {
 
   const options = {
     "key": RAZORPAY_KEY_ID,
-    "amount": total * 100, // in paise
+    "amount": total * 100,
     "currency": "INR",
     "name": "Educare Technical Training Institute",
     "description": pendingCheckoutCourse ? pendingCheckoutCourse.title : "Program Enrollment",
@@ -1444,7 +1573,7 @@ function launchRazorpayCheckout(subtotal, tax, total) {
     });
     rzp.open();
   } catch (err) {
-    console.error("Razorpay popup launch error:", err);
+    console.error("Razorpay popup error:", err);
     window.open(RAZORPAY_PAYMENT_URL, '_blank');
     const confirmBox = document.getElementById('confirm-manual-pay');
     if (confirmBox) confirmBox.classList.remove('hidden');
@@ -1499,12 +1628,127 @@ function completePaymentAndEnroll(subtotal, tax, total, transactionId, paymentMe
   navigate('dashboard');
 }
 
+// -------------------------------------------------------------
+// INVOICE, CERTIFICATE & POLICY MODALS (RESTORED)
+// -------------------------------------------------------------
+function showInvoiceModal(purchaseId) {
+  const p = state.purchases.find(item => item.id === purchaseId);
+  if (!p) return;
+
+  const html = `
+    <div id="active-invoice-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl border border-slate-200 space-y-6">
+        <div class="flex justify-between items-start pb-4 border-b border-slate-100">
+          <div>
+            <h3 class="text-xl font-black text-slate-900">TAX INVOICE / RECEIPT</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Educare Technical Training Institute (ISO 9001:2015)</p>
+          </div>
+          <button onclick="document.getElementById('active-invoice-modal').remove()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-xs text-slate-600">
+          <div>
+            <strong class="text-slate-900 block">Billed To:</strong>
+            <div>${p.studentName}</div>
+            <div>${p.userId}</div>
+          </div>
+          <div class="text-right">
+            <div><strong>Invoice No:</strong> ${p.invoiceNumber}</div>
+            <div><strong>Transaction ID:</strong> ${p.transactionId}</div>
+            <div><strong>Date:</strong> ${new Date(p.paidAt).toLocaleDateString()}</div>
+          </div>
+        </div>
+
+        <table class="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+          <thead class="bg-slate-50 uppercase text-[10px] text-slate-500 font-bold">
+            <tr>
+              <th class="p-3">Course Item</th>
+              <th class="p-3 text-right">Validity</th>
+              <th class="p-3 text-right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="p-3 font-semibold text-slate-900">${p.courseTitle}</td>
+              <td class="p-3 text-right">365 Days</td>
+              <td class="p-3 text-right">₹${p.amount.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="p-3 text-right font-medium text-slate-500">CGST (9%) + SGST (9%)</td>
+              <td class="p-3 text-right font-medium text-slate-700">₹${p.tax.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr class="bg-slate-50 font-bold text-slate-900">
+              <td colspan="2" class="p-3 text-right">Total Paid (Inclusive of Taxes)</td>
+              <td class="p-3 text-right text-blue-600 text-sm">₹${p.total.toLocaleString('en-IN')}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="flex justify-between items-center pt-2">
+          <span class="text-[10px] text-slate-400">Status: Verified Payment • Official GST Receipt</span>
+          <button onclick="window.print()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold shadow">
+            🖨 Print Invoice
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function showCertificateModal(courseId) {
+  const course = state.courses.find(c => c.id === courseId);
+  const certId = "EDU-CERT-" + Math.floor(100000 + Math.random() * 900000);
+
+  const html = `
+    <div id="active-cert-modal" class="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-3xl w-full p-10 shadow-2xl border-8 border-slate-900 space-y-6 text-center relative overflow-hidden">
+        <button onclick="document.getElementById('active-cert-modal').remove()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        <div class="space-y-2">
+          <div class="w-12 h-12 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-black text-2xl">E</div>
+          <div class="text-xs uppercase tracking-widest text-slate-400 font-bold">Educare Technical Training Institute</div>
+          <h2 class="text-3xl font-black text-slate-900 tracking-tight">CERTIFICATE OF COMPLETION</h2>
+        </div>
+        <p class="text-xs text-slate-500 italic">This is to certify that</p>
+        <div class="text-3xl font-extrabold text-blue-700 font-serif border-b-2 border-slate-200 pb-2 max-w-md mx-auto">
+          ${state.currentUser.name}
+        </div>
+        <p class="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
+          has successfully satisfied all curriculum requirements, assessments, and technical assignments for:
+        </p>
+        <div class="text-xl font-bold text-slate-900">${course.title}</div>
+        <div class="pt-4 text-[10px] text-slate-400 font-mono flex justify-between items-center border-t border-slate-100">
+          <span>Certificate ID: ${certId}</span>
+          <span>Verified: educare-hazel.vercel.app</span>
+          <button onclick="window.print()" class="px-3 py-1 bg-slate-900 text-white rounded text-[11px] font-bold">🖨 Print</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function showPolicyModal(key) {
+  const p = activePolicies[key];
+  if (!p) return;
+  alert(`${p.title}\n\n${p.sections.map(s => `${s.heading}:\n${s.body}`).join('\n\n')}`);
+}
+
+function showContactModal() {
+  const c = activePolicies.contact;
+  if (!c) return;
+  alert(`Educare Institute Contact\n\nAdmissions: ${c.admissionsEmail}\nSupport: ${c.supportEmail}\nPhone: ${c.phone}\nAddress: ${c.address}`);
+}
+
 function startLearning(courseId) {
   const course = state.courses.find(c => c.id === courseId);
   const firstLecture = course.sections[0]?.lectures[0];
   if (firstLecture) navigate('learn', { courseId: course.id, lectureId: firstLecture.id });
 }
 
+// -------------------------------------------------------------
+// BOOTSTRAP (SAFE DOM-READY STARTUP)
+// -------------------------------------------------------------
 function startEducareApp() {
   try {
     navigate('home');
