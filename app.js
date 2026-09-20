@@ -1011,9 +1011,10 @@ function renderAdminView() {
                         ${s.active ? 'Active' : 'Locked'}
                       </span>
                     </td>
-                    <td class="px-6 py-4 text-right">
-                      <button onclick="toggleUserStatus('${s.id}')" class="text-blue-600 font-bold hover:underline">${s.active ? 'Lock' : 'Unlock'}</button>
-                    </td>
+                   <td class="px-6 py-4 text-right space-x-3">
+                   <button onclick="toggleUserStatus('${s.id}')" class="text-blue-600 font-bold hover:underline">${s.active ? 'Lock Account' : 'Unlock Account'}</button>
+                  <button onclick="promptDeleteStudent('${s.id}')" class="text-rose-600 font-bold hover:underline">🗑 Delete Student</button>
+                   </td>
                   </tr>
                 `;
               }).join('')}
